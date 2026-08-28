@@ -95,13 +95,19 @@ public final class LeaderboardTracker {
 		// Rank every player we have ever seen carrying anything, not just
 		// those online right now — otherwise the board would empty out as
 		// soon as people logged off.
+		// Everyone we have ever seen goes on the board, INCLUDING players
+		// with nothing.
+		//
+		// This used to skip anyone whose total was 0, which meant a server
+		// where nobody had earned yet showed a completely blank leaderboard
+		// — indistinguishable from the feature being broken. A board reading
+		// "1. Scotz - 0" is honest and visibly working; an empty one just
+		// looks like a bug, and did.
 		List<PisoLeaderboard.Entry> ranked = new ArrayList<>();
 		for (Map.Entry<UUID, Long> entry : board.carried().entrySet()) {
 			UUID id = entry.getKey();
 			long total = entry.getValue() + vault.getBalance(id);
-			if (total > 0) {
-				ranked.add(new PisoLeaderboard.Entry(id, board.nameFor(id), total));
-			}
+			ranked.add(new PisoLeaderboard.Entry(id, board.nameFor(id), total));
 		}
 
 		// Nothing to rank yet — leave the clock ALONE and try again on the
@@ -123,6 +129,13 @@ public final class LeaderboardTracker {
 		}
 
 		board.publish(today, ranked);
+
+		// Only announce once there is actually a leader worth naming — an
+		// all-zero board still publishes (so it is visible and obviously
+		// working) but broadcasting "Leader: someone (0)" is just noise.
+		if (ranked.get(0).total() <= 0) {
+			return;
+		}
 
 		server.getPlayerList().broadcastSystemMessage(
 				Component.literal("Richest players updated — /top to see the board. Leader: "
