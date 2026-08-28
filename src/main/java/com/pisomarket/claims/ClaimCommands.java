@@ -94,7 +94,8 @@ public final class ClaimCommands {
 				int left = Claim.RENT_GRACE_PERIODS - claim.unpaidPeriods();
 				rent = " — RENT UNPAID, protection OFF, released after " + left + " more missed";
 			} else {
-				rent = " — rent " + claim.rentPerPeriod() + " every " + Claim.RENT_PERIOD_DAYS + " days played";
+				rent = " — rent " + claim.rentPerPeriod() + " every " + Claim.RENT_PERIOD_DAYS
+						+ " days played, next due in " + RentCollector.timeUntilDue(claim);
 			}
 			String line = "#" + claim.id() + " — " + w + "x" + l + "x" + h
 					+ " at (" + claim.minX() + "," + claim.minY() + "," + claim.minZ() + ")" + rent;

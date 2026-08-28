@@ -35,6 +35,21 @@ public final class RentCollector {
 		return Math.max(1, Math.round(deedPrice * RENT_FRACTION_OF_PRICE));
 	}
 
+	// How long until this claim's next rent charge, as player-facing text.
+	// Shared by the deed book and /claims so the two can never disagree.
+	//
+	// The clock only advances while the owner is logged in, so these are
+	// days of PLAY, not calendar days — hence the real-minutes figure
+	// alongside it, which is what someone can actually plan around.
+	// 1000 ticks is one in-game hour; 20 ticks is one real second.
+	public static String timeUntilDue(final Claim claim) {
+		long remaining = Math.max(0, Claim.RENT_PERIOD_TICKS - claim.rentProgressTicks());
+		long days = remaining / Claim.TICKS_PER_DAY;
+		long hours = (remaining % Claim.TICKS_PER_DAY) / 1000L;
+		long realMinutes = remaining / 20L / 60L;
+		return days + "d " + hours + "h (about " + realMinutes + " min played)";
+	}
+
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			tickCounter++;

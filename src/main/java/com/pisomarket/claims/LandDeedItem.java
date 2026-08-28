@@ -207,8 +207,20 @@ public class LandDeedItem extends Item {
 	// reads WRITTEN_BOOK_CONTENT off whatever it finds there.
 	private static void openBook(final ServerPlayer player, final ItemStack heldStack, final InteractionHand hand,
 			final String title, final MutableComponent page) {
+		openBook(player, heldStack, hand, title, List.of(page));
+	}
+
+	// Multi-page overload. A written book page renders only what physically
+	// fits and silently CLIPS the rest — it doesn't scroll or wrap onto the
+	// next page. So anything that can grow (the trust list) gets its own
+	// page, otherwise a claim with several trusted players would push the
+	// chest settings and [Unclaim] button off the bottom where they can't
+	// be clicked at all.
+	private static void openBook(final ServerPlayer player, final ItemStack heldStack, final InteractionHand hand,
+			final String title, final List<MutableComponent> pages) {
 		WrittenBookContent content = new WrittenBookContent(
-				Filterable.passThrough(title), "Piso Market", 0, List.of(Filterable.passThrough(page)), true
+				Filterable.passThrough(title), "Piso Market", 0,
+				pages.stream().map(p -> Filterable.passThrough((Component) p)).toList(), true
 		);
 		heldStack.set(DataComponents.WRITTEN_BOOK_CONTENT, content);
 		player.openItemGui(heldStack, hand);
@@ -247,9 +259,15 @@ public class LandDeedItem extends Item {
 		int length = claim.maxZ() - claim.minZ() + 1;
 		int height = claim.maxY() - claim.minY() + 1;
 
-		MutableComponent page = Component.literal(
-				"Claim #" + claim.id() + "\n" + width + "x" + length + "x" + height + "\n\n"
+		// PAGE 1 — the claim itself and its rent standing.
+		MutableComponent overview = Component.literal(
+				"Claim #" + claim.id() + "\n" + width + "x" + length + "x" + height + "\n"
+						+ "at " + claim.minX() + ", " + claim.minZ() + "\n\n"
 		);
+		appendRentSection(overview, claim);
+
+		// PAGE 2 — trust management (the part that grows).
+		MutableComponent page = Component.literal("");
 
 		if (claim.trusted().isEmpty()) {
 			page.append(Component.literal("No one trusted yet\n\n"));
@@ -287,16 +305,55 @@ public class LandDeedItem extends Item {
 			page.append(Component.literal("(no one else online)\n"));
 		}
 
-		// Chest access — replaces the old Lock item entirely. One setting
-		// for every chest in the claim; the owner is never restricted.
-		page.append(Component.literal("\nChests: " + claim.chestAccess().label() + "\n"));
-		appendChestLinks(page);
+		// PAGE 3 — chest access and the destructive button, kept clear of the
+		// trust list so they can never be clipped off the page.
+		// Chest access replaces the old Lock item entirely. One setting for
+		// every chest in the claim; the owner is never restricted.
+		MutableComponent settings = Component.literal("Chests: " + claim.chestAccess().label() + "\n");
+		appendChestLinks(settings);
 
-		page.append(Component.literal("\n\n"))
+		settings.append(Component.literal("\n\n"))
 				.append(Component.literal("[Unclaim this land]").withStyle(s -> s.withClickEvent(new ClickEvent.RunCommand("/unclaim"))));
 
 		// Content goes on the held stack — see openBook for why.
-		openBook(player, heldStack, hand, "Claim #" + claim.id(), page);
+		openBook(player, heldStack, hand, "Claim #" + claim.id(), List.of(overview, page, settings));
+	}
+
+	// The rent countdown. This is the part players actually need to see:
+	// rent is charged silently in the background by RentCollector, so
+	// without it the first sign anything was happening was a "protection is
+	// OFF" chat message.
+	//
+	// The clock only advances while the owner is logged in (see
+	// RentCollector), so "days" here means days of PLAY, not calendar days.
+	// Both units are shown because neither alone is meaningful on its own:
+	// in-game days are what the rent is defined in, but real minutes are
+	// what a player can actually plan around.
+	private static void appendRentSection(final MutableComponent page, final Claim claim) {
+		if (claim.rentPerPeriod() <= 0) {
+			// Claims created before rent existed carry 0 and stay free.
+			page.append(Component.literal("Rent: none\nThis land is free to keep.\n"));
+			return;
+		}
+
+		page.append(Component.literal(
+				"Rent: " + claim.rentPerPeriod()
+						+ "\nevery " + Claim.RENT_PERIOD_DAYS + " days played\n\n"
+		));
+
+		page.append(Component.literal("Next due in:\n" + RentCollector.timeUntilDue(claim) + "\n\n"));
+
+		if (claim.rentUnpaid()) {
+			int periodsLeft = Claim.RENT_GRACE_PERIODS - claim.unpaidPeriods();
+			page.append(Component.literal(
+					"PROTECTION IS OFF\nYou missed " + claim.unpaidPeriods() + " payment"
+							+ (claim.unpaidPeriods() == 1 ? "" : "s") + ". Anyone can build here until rent is paid.\n"
+							+ "Land is released after " + periodsLeft + " more.\n\n"
+							+ "Put money in your vault — it pays itself.\n"
+			));
+		} else {
+			page.append(Component.literal("Paid up. Protection on.\n"));
+		}
 	}
 
 	private static void appendChestLinks(final MutableComponent page) {
