@@ -40,22 +40,11 @@ public record Claim(
 		Map<UUID, TrustLevel> trusted, Map<UUID, String> trustedNames, ChestAccess chestAccess,
 		long rentPerPeriod, long rentProgressTicks, int unpaidPeriods
 ) {
-	// The player's name is recorded when trust is granted. There is no
-	// reliable UUID->name lookup for someone who has never been online this
-	// session, so without this an offline trusted player showed in the deed
-	// book as a raw UUID with no working [Remove] button.
-	public String nameFor(final UUID player) {
-		String name = trustedNames.get(player);
-		return name != null ? name : player.toString();
-	}
 	public static final int RENT_PERIOD_DAYS = 4;
 	public static final int RENT_GRACE_PERIODS = 4;
 	public static final long TICKS_PER_DAY = 24000L;
 	public static final long RENT_PERIOD_TICKS = RENT_PERIOD_DAYS * TICKS_PER_DAY;
 
-	public boolean rentUnpaid() {
-		return unpaidPeriods > 0;
-	}
 	private static final Codec<TrustLevel> TRUST_LEVEL_CODEC = Codec.STRING.xmap(TrustLevel::valueOf, Enum::name);
 	private static final Codec<ChestAccess> CHEST_ACCESS_CODEC = Codec.STRING.xmap(ChestAccess::valueOf, Enum::name);
 
@@ -85,6 +74,20 @@ public record Claim(
 			).apply(instance, Claim::new)
 	);
 
+	// >0 means a rent charge was missed: protection is off right now.
+	public boolean rentUnpaid() {
+		return unpaidPeriods > 0;
+	}
+
+	// The player's name is recorded when trust is granted. There is no
+	// reliable UUID->name lookup for someone who has never been online this
+	// session, so without this an offline trusted player showed in the deed
+	// book as a raw UUID with no working [Remove] button.
+	public String nameFor(final UUID player) {
+		String name = trustedNames.get(player);
+		return name != null ? name : player.toString();
+	}
+
 	public boolean contains(final BlockPos pos) {
 		return pos.getX() >= minX && pos.getX() <= maxX
 				&& pos.getY() >= minY && pos.getY() <= maxY
@@ -107,13 +110,21 @@ public record Claim(
 		if (rentUnpaid()) {
 			return true;
 		}
-		return owner.equals(player) || trusted.getOrDefault(player, null) != null && trusted.get(player).allowsPlace();
+		if (owner.equals(player)) {
+			return true;
+		}
+		TrustLevel level = trusted.get(player);
+		return level != null && level.allowsPlace();
 	}
 
 	public boolean canDestroy(final UUID player) {
 		if (rentUnpaid()) {
 			return true;
 		}
-		return owner.equals(player) || trusted.getOrDefault(player, null) != null && trusted.get(player).allowsDestroy();
+		if (owner.equals(player)) {
+			return true;
+		}
+		TrustLevel level = trusted.get(player);
+		return level != null && level.allowsDestroy();
 	}
 }

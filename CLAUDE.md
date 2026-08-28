@@ -63,6 +63,19 @@ Check here before writing code that touches these:
 - **`AbstractContainerMenu.quickMoveStack` is abstract** — `@Inject` into it
   fails at load with "insnNode is null". Shift-click arrives at `clicked()`
   as `ContainerInput.QUICK_MOVE`; handle it there.
+- **`ServerExplosion.calculateExplodedPositions` must return a MUTABLE
+  list.** `interactWithBlocks` calls `Util.shuffle` on it, which does
+  `list.set(...)` in place. Filtering the list with `stream().toList()`
+  (immutable) crashed the server with `UnsupportedOperationException` the
+  moment an explosion touched a claim. `ClaimProtection.filterProtected`
+  returns `new ArrayList<>` or vanilla's own list, never `List.of()`.
+- **Cancelling a placement server-side does NOT un-predict it on the
+  client.** The client already drew the block and decremented the held
+  stack. Returning `InteractionResult.FAIL` leaves the item looking gone
+  until something else resends the inventory. Always follow a denial with
+  `containerMenu.sendAllDataToRemote()` plus a `ClientboundBlockUpdatePacket`
+  for both the clicked and the target position (see
+  `ClaimProtection.resyncAfterDeniedPlace`).
 - **Menu `clicked()` runs on the client too** (for prediction). Fields the
   server mutates (like a current-view enum) are always stale client-side,
   so branching on them there silently breaks slot interaction.
@@ -209,6 +222,13 @@ rate only controls how it *feels* to harvest by hand. A daily cap would need
 to count items dropped per player per day and reset on day number change,
 tracked in persistent state keyed by UUID.
 
+**TNT is disabled server-wide** (`TntRemovalMixin`). It was causing lag and
+a hard server crash at claim edges. The primed entity is discarded on its
+first tick, so no fuse, no explosion, no block scan. The vanilla crafting
+recipe is overridden (`data/minecraft/recipe/tnt.json`) to require barrier
+blocks so it can't be made either. Creepers, beds and end crystals still
+explode normally and are still filtered by `ExplosionProtectionMixin`.
+
 **Sinks:**
 - System shop purchases (see catalog below)
 - Territory rent (recurring, scales with claim size)
@@ -273,7 +293,7 @@ days is roughly 100 real hours — deliberately once-per-server.
 ## Shop UI
 
 A craftable block, not a command-only interface — placed in the world,
-right-click to open a chest-style menu (`PisoShopMenu`, a custom
+right-click to open a chest-style menu (crafted from 8 gold ingots around 1 obsidian) (`PisoShopMenu`, a custom
 `AbstractContainerMenu`). Ended up needing a small custom client `Screen`
 class after all (`PisoShopScreen`) — the build order's original hope of
 avoiding one didn't quite hold, since vanilla's own generic-container screen

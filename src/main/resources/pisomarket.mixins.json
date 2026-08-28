@@ -5,7 +5,8 @@
 	"mixins": [
 		"PlayerDropMixin",
 		"ContainerDeedGuardMixin",
-		"ExplosionProtectionMixin"
+		"ExplosionProtectionMixin",
+		"TntRemovalMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -57,6 +57,12 @@ public class PisoClaims extends SavedData {
 		return new State(nextId, List.copyOf(claims.values()));
 	}
 
+	// Cheap guard for hot paths (explosions, block events) that want to do
+	// nothing at all when the server has no claims yet.
+	public boolean isEmpty() {
+		return claims.isEmpty();
+	}
+
 	public Claim get(final int id) {
 		return claims.get(id);
 	}

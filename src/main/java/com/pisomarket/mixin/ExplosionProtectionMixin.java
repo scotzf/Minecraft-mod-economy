@@ -37,11 +37,10 @@ public abstract class ExplosionProtectionMixin {
 			return;
 		}
 
-		List<BlockPos> allowed = positions.stream()
-				.filter(pos -> !ClaimProtection.isExplosionProtected(this.level, pos))
-				.toList();
-
-		if (allowed.size() != positions.size()) {
+		// One batched pass — see ClaimProtection.filterProtected for why
+		// this must not be done per-position.
+		List<BlockPos> allowed = ClaimProtection.filterProtected(this.level, positions);
+		if (allowed != positions) {
 			cir.setReturnValue(allowed);
 		}
 	}

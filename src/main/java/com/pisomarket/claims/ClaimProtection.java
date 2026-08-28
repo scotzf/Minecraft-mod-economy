@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
@@ -53,7 +54,18 @@ public final class ClaimProtection {
 			}
 
 			BlockPos targetPos = hitResult.getBlockPos().relative(hitResult.getDirection());
-			return checkPlace(serverPlayer, targetPos) ? InteractionResult.PASS : InteractionResult.FAIL;
+			if (checkPlace(serverPlayer, targetPos)) {
+				return InteractionResult.PASS;
+			}
+			// The client already ran its own prediction the instant it was
+			// clicked: it drew the block and took one off the held stack. The
+			// server refusing does NOT undo that on its own, so without this
+			// the block stayed missing from the player's inventory until
+			// something else happened to resend it — the reported "it won't
+			// place but it still disappears" bug. Nothing was ever really
+			// lost server-side; the client was just showing a stale copy.
+			resyncAfterDeniedPlace(serverPlayer, hitResult.getBlockPos(), targetPos);
+			return InteractionResult.FAIL;
 		});
 
 		// Breaking an item frame / painting / armor stand is an attack on an
@@ -99,10 +111,57 @@ public final class ClaimProtection {
 	// it that we can meaningfully trust-check (a creeper isn't anybody), so
 	// any claimed block is simply immune — including the owner's own, which
 	// is the point: you don't want your own base creeper-holed either.
-	public static boolean isExplosionProtected(final ServerLevel level, final BlockPos pos) {
+	// Filters a whole explosion's block list in one pass. Doing this per
+	// position (the obvious way) meant a SavedData lookup for EVERY block
+	// an explosion touched — a TNT chain touches hundreds — on top of a
+	// full claim scan each. Now: one lookup, an instant bail-out when
+	// nothing is claimed, and no new list allocated unless something was
+	// actually removed.
+	//
+	// CRASH TRAP — the returned list MUST be mutable. ServerExplosion calls
+	// Util.shuffle on it, which does list.set(...) in place. An earlier
+	// version built the filtered list with stream().toList(), which is
+	// immutable, so any explosion that actually touched a claim killed the
+	// server with UnsupportedOperationException. Hence new ArrayList<> here,
+	// and returning vanilla's own (already mutable) list untouched
+	// otherwise. Never return List.of() / Stream.toList() from this method.
+	public static java.util.List<BlockPos> filterProtected(final ServerLevel level, final java.util.List<BlockPos> positions) {
 		PisoClaims claims = level.getServer().getDataStorage().computeIfAbsent(PisoClaims.TYPE);
-		Claim claim = claims.findAt(level.dimension(), pos.getX(), pos.getY(), pos.getZ());
-		return claim != null && !claim.rentUnpaid();
+		if (claims.isEmpty()) {
+			return positions;
+		}
+
+		var dimension = level.dimension();
+		java.util.List<BlockPos> allowed = null;
+		for (int i = 0; i < positions.size(); i++) {
+			BlockPos pos = positions.get(i);
+			Claim claim = claims.findAt(dimension, pos.getX(), pos.getY(), pos.getZ());
+			boolean protectedHere = claim != null && !claim.rentUnpaid();
+
+			if (protectedHere && allowed == null) {
+				// First removal — copy what we've kept so far.
+				allowed = new java.util.ArrayList<>(positions.subList(0, i));
+			} else if (!protectedHere && allowed != null) {
+				allowed.add(pos);
+			}
+		}
+		return allowed != null ? allowed : positions;
+	}
+
+	// Undo the client's optimistic placement prediction. Two separate things
+	// have to be corrected, and missing either one leaves a visible bug:
+	//   - the inventory, or the held stack stays one short on screen;
+	//   - both block positions, or a "ghost" block the server doesn't have
+	//     stays drawn until the chunk reloads. The clicked block is resent
+	//     as well as the target because some placements (slabs, stairs)
+	//     predict a change to the block clicked ON rather than next to it.
+	private static void resyncAfterDeniedPlace(final ServerPlayer player, final BlockPos clicked, final BlockPos target) {
+		player.containerMenu.sendAllDataToRemote();
+		ServerLevel level = (ServerLevel) player.level();
+		player.connection.send(new ClientboundBlockUpdatePacket(level, target));
+		if (!clicked.equals(target)) {
+			player.connection.send(new ClientboundBlockUpdatePacket(level, clicked));
+		}
 	}
 
 	private static boolean checkDestroy(final ServerPlayer player, final BlockPos pos) {

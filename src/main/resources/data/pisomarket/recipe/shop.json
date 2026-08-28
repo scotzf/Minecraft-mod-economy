@@ -3,11 +3,11 @@
 	"category": "misc",
 	"key": {
 		"G": "minecraft:gold_ingot",
-		"E": "minecraft:ender_chest"
+		"O": "minecraft:obsidian"
 	},
 	"pattern": [
 		"G G",
-		"GEG",
+		"GOG",
 		"G G"
 	],
 	"result": { "id": "pisomarket:shop", "count": 1 }
