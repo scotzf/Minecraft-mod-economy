@@ -1,6 +1,5 @@
 package com.pisomarket.market;
 
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,11 +77,21 @@ public class PisoMarketListings extends SavedData {
 		return removed;
 	}
 
+	// Read-only VIEW in id order, not a sorted copy.
+	//
+	// This used to copy every listing into a new list and sort it on each
+	// call, which happens on every /market browse AND every page click in
+	// the shop GUI — to then display 18 of them. Since listings are never
+	// expired (a deliberate design decision) that cost grows forever.
+	//
+	// The sort was redundant: ids come from nextId++ and are never reused,
+	// and a LinkedHashMap preserves insertion order, so the map's own
+	// iteration order is already ascending id.
 	public List<MarketListing> all() {
-		return listings.values().stream().sorted(Comparator.comparingInt(MarketListing::id)).collect(Collectors.toList());
+		return List.copyOf(listings.values());
 	}
 
 	public List<MarketListing> bySeller(final UUID seller) {
-		return all().stream().filter(listing -> listing.seller().equals(seller)).collect(Collectors.toList());
+		return listings.values().stream().filter(listing -> listing.seller().equals(seller)).collect(Collectors.toList());
 	}
 }

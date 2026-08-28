@@ -7,6 +7,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantments;
 
+import com.pisomarket.economy.harvest.HarvestFaucet;
+import com.pisomarket.economy.harvest.HarvestPotionItem;
+
 // Prices come from one formula rather than per-item guesswork:
 //
 //     price = material unit value  x  recipe unit count
@@ -114,6 +117,15 @@ public final class ShopCatalog {
 		id = addEntry(entries, id, Items.FIREWORK_ROCKET, TIER_CONSUMABLE, 4, 64, 1);
 		id = addEntry(entries, id, Items.ENDER_PEARL, TIER_CONSUMABLE, 25, 16, 2);
 
+		// Harvest potions. Priced by the stated rule: half of what a player
+		// can earn in the one minute the potion lasts. See potionPrice.
+		id = addEntry(entries, id, HarvestPotionItem.HARVEST_I, TIER_CONSUMABLE,
+				potionPrice(HarvestFaucet.DROP_CHANCE + HarvestFaucet.HARVEST_BOOST_I, 1), 16, 1);
+		id = addEntry(entries, id, HarvestPotionItem.HARVEST_II, TIER_CONSUMABLE,
+				potionPrice(HarvestFaucet.DROP_CHANCE + HarvestFaucet.HARVEST_BOOST_II, 1), 8, 1);
+		id = addEntry(entries, id, HarvestPotionItem.LUCK, TIER_CONSUMABLE,
+				potionPrice(HarvestFaucet.DROP_CHANCE, 2), 8, 1);
+
 		// --- Tier 4: the genuinely unobtainable. Priced by scarcity, not
 		// by materials, and restocked on a scale of real days.
 		id = addEntry(entries, id, Items.ECHO_SHARD, TIER_PRESTIGE, 150, 4, 14);
@@ -123,6 +135,26 @@ public final class ShopCatalog {
 		addEntry(entries, id, Items.ELYTRA, TIER_PRESTIGE, 2000, 1, 300);
 
 		return List.copyOf(entries);
+	}
+
+	// How many mature potato crops a player can realistically break by hand
+	// in one minute. Two per second — brisk but sustainable while walking a
+	// farm row. Every potion price below is derived from this one number, so
+	// if it turns out to be wrong in practice, change it here and all three
+	// prices move together.
+	public static final int HARVEST_PER_MINUTE = 120;
+
+	// The stated pricing rule: a potion costs half of what it earns you over
+	// the one minute it lasts.
+	//
+	// NOTE — this makes every potion strictly profitable to drink while
+	// harvesting, so a player who is farming anyway should always be using
+	// one. It is not an infinite-money loop (you still have to break the
+	// crops), but it does raise the effective faucet rate for anyone who
+	// buys in. See the summary in chat for the numbers.
+	private static long potionPrice(final double effectiveChance, final int payoutPerHit) {
+		double yieldPerMinute = HARVEST_PER_MINUTE * effectiveChance * payoutPerHit;
+		return Math.max(1, (long) Math.ceil(yieldPerMinute / 2.0));
 	}
 
 	private static int addTool(final List<ShopEntry> entries, final int id, final Item item, final long price, final int stock) {

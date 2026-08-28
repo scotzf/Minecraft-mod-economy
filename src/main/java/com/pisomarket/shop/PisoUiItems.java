@@ -26,15 +26,16 @@ public final class PisoUiItems {
 	public static final Item DEPOSIT = create("ui_deposit");
 	public static final Item WITHDRAW = create("ui_withdraw");
 	public static final Item DEPOSIT_ALL = create("ui_deposit_all");
+	public static final Item LEADERBOARD = create("ui_leaderboard");
 
 	private static final String[] NAMES = {
 			"ui_plus_1", "ui_plus_10", "ui_plus_100",
 			"ui_minus_1", "ui_minus_10", "ui_minus_100",
-			"ui_balance", "ui_amount", "ui_deposit", "ui_withdraw", "ui_deposit_all",
+			"ui_balance", "ui_amount", "ui_deposit", "ui_withdraw", "ui_deposit_all", "ui_leaderboard",
 	};
 	private static final Item[] ITEMS = {
 			PLUS_1, PLUS_10, PLUS_100, MINUS_1, MINUS_10, MINUS_100,
-			BALANCE, AMOUNT, DEPOSIT, WITHDRAW, DEPOSIT_ALL,
+			BALANCE, AMOUNT, DEPOSIT, WITHDRAW, DEPOSIT_ALL, LEADERBOARD,
 	};
 
 	private PisoUiItems() {

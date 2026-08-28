@@ -20,6 +20,7 @@ import com.pisomarket.claims.ClaimsContent;
 import com.pisomarket.claims.DeedCatalog;
 import com.pisomarket.claims.DeedCommands;
 import com.pisomarket.claims.LandDeedItem;
+import com.pisomarket.economy.PisoLeaderboard;
 import com.pisomarket.market.MarketCommands;
 import com.pisomarket.market.MarketListing;
 import com.pisomarket.shop.system.PisoShopStock;
@@ -51,6 +52,7 @@ public class PisoShopMenu extends AbstractContainerMenu {
 	private static final int MAIN_BUY = 11;
 	private static final int MAIN_SELL = 13;
 	private static final int MAIN_BLACKMARKET = 15;
+	private static final int MAIN_LEADERBOARD = 17;
 
 	private static final int NAV_BACK = 18;
 	private static final int NAV_PREV = 21;
@@ -109,7 +111,7 @@ public class PisoShopMenu extends AbstractContainerMenu {
 	private static final int VAULT_PLUS_10 = 24;
 	private static final int VAULT_PLUS_100 = 25;
 
-	private enum View { MAIN, MARKET, BLACKMARKET, SELL, VAULT }
+	private enum View { MAIN, MARKET, BLACKMARKET, SELL, VAULT, LEADERBOARD }
 
 	// PisoShopContainer (not a plain SimpleContainer) so the deed guard
 	// mixin can recognise the Sell slot as a legitimate destination — see
@@ -187,6 +189,48 @@ public class PisoShopMenu extends AbstractContainerMenu {
 		content.setItem(MAIN_BUY, namedBook("Buy"));
 		content.setItem(MAIN_SELL, namedBook("Sell"));
 		content.setItem(MAIN_BLACKMARKET, namedBook("BlackMarket"));
+		// Not a book like the others — the leaderboard is a readout, not a
+		// shop section, so it gets its own icon to read as different.
+		content.setItem(MAIN_LEADERBOARD, icon(PisoUiItems.LEADERBOARD, "Leaderboard"));
+	}
+
+	// The last published wealth snapshot (see PisoLeaderboard). Read-only:
+	// nothing here is clickable except Back, and no money moves.
+	private void showLeaderboard() {
+		view = View.LEADERBOARD;
+		clearContent();
+
+		List<PisoLeaderboard.Entry> entries =
+				owner.level().getServer().getDataStorage().computeIfAbsent(PisoLeaderboard.TYPE).snapshot();
+
+		if (entries.isEmpty()) {
+			// Be specific about WHY it's empty. "No data" on its own reads as
+			// a broken feature; the real reason is almost always that nobody
+			// has any money on the books yet.
+			content.setItem(4, icon(PisoUiItems.LEADERBOARD,
+					"No leaderboard yet — earn some potatoes and it appears within seconds"));
+		}
+
+		// One row of up to 9, which is exactly the top 9 of the stored top
+		// 10. Deliberately no paging: a leaderboard nobody can see at a
+		// glance isn't doing its job.
+		for (int i = 0; i < entries.size() && i < 9; i++) {
+			PisoLeaderboard.Entry entry = entries.get(i);
+			int rank = i + 1;
+			// Gold / iron / copper for the top three, then plain paper.
+			net.minecraft.world.item.Item medal = switch (rank) {
+				case 1 -> Items.GOLD_INGOT;
+				case 2 -> Items.IRON_INGOT;
+				case 3 -> Items.COPPER_INGOT;
+				default -> Items.PAPER;
+			};
+			ItemStack stack = icon(medal, rank + ". " + entry.name() + " — " + entry.total());
+			// Stack size doubles as a visible rank number in the corner.
+			stack.setCount(Math.min(64, rank));
+			content.setItem(9 + i, stack);
+		}
+
+		content.setItem(NAV_BACK, namedBook("< Back"));
 	}
 
 	private void showVault() {
@@ -362,6 +406,7 @@ public class PisoShopMenu extends AbstractContainerMenu {
 			case BLACKMARKET -> clickedBlackMarket(slotId, serverPlayer);
 			case SELL -> clickedSell(slotId, serverPlayer);
 			case VAULT -> clickedVault(slotId, serverPlayer);
+			case LEADERBOARD -> clickedLeaderboard(slotId, serverPlayer);
 		}
 	}
 
@@ -374,6 +419,15 @@ public class PisoShopMenu extends AbstractContainerMenu {
 			showSell();
 		} else if (slotId == MAIN_BLACKMARKET) {
 			showBlackMarket(0);
+		} else if (slotId == MAIN_LEADERBOARD) {
+			showLeaderboard();
+		}
+	}
+
+	// Leaderboard is a readout — Back is the only thing that does anything.
+	private void clickedLeaderboard(final int slotId, final ServerPlayer player) {
+		if (slotId == NAV_BACK) {
+			showMain();
 		}
 	}
 
@@ -448,7 +502,9 @@ public class PisoShopMenu extends AbstractContainerMenu {
 	// Takes `requested` potatoes straight out of the player's inventory
 	// (capped at what they actually carry) and credits the vault. Credits
 	// before removing, same failure-can't-destroy-items ordering as
-	// /deposit — see PisoCommands.deposit.
+	// Inventory potatoes -> vault. This is now the ONLY way to deposit:
+	// the /deposit command was removed so the Shop block is a place players
+	// actually have to visit.
 	private void depositFromInventory(final ServerPlayer player, final long requested) {
 		long held = player.getInventory().countItem(Items.POISONOUS_POTATO);
 		long amount = Math.min(held, requested);

@@ -24,6 +24,14 @@ public final class PisoCreativeTabs {
 				output.accept(new ItemStack(PisoShopContent.SHOP_BLOCK), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS)
 		);
 
+		// Potions in the food/drink tab so they can be grabbed for testing
+		// without going through the BlackMarket every time.
+		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.FOOD_AND_DRINKS).register(output -> {
+			output.accept(new ItemStack(com.pisomarket.economy.harvest.HarvestPotionItem.HARVEST_I), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.economy.harvest.HarvestPotionItem.HARVEST_II), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.economy.harvest.HarvestPotionItem.LUCK), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+		});
+
 		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(output -> {
 			// One entry per deed size, each already carrying its
 			// width/length/height so it's usable straight out of creative.

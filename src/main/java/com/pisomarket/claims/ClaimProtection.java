@@ -164,6 +164,54 @@ public final class ClaimProtection {
 		}
 	}
 
+	// The claim currently protecting this position, or null if none is (or
+	// if its rent is unpaid, which switches protection off).
+	private static Claim protectingClaim(final ServerLevel level, final BlockPos pos) {
+		PisoClaims claims = level.getServer().getDataStorage().computeIfAbsent(PisoClaims.TYPE);
+		if (claims.isEmpty()) {
+			return null;
+		}
+		Claim claim = claims.findAt(level.dimension(), pos.getX(), pos.getY(), pos.getZ());
+		return claim != null && !claim.rentUnpaid() ? claim : null;
+	}
+
+	// Should a fluid be stopped from spreading into `dest`?
+	//
+	// Placing a bucket inside someone's claim was already blocked, but that
+	// did nothing about the obvious way around it: stand just OUTSIDE the
+	// boundary, pour lava, and let it flow in. Fluid spread is not a player
+	// action, so no player-facing event ever fires for it.
+	//
+	// The rule is "can't cross a boundary", not "no fluid in claims" — an
+	// owner's own water and lava still flow freely INSIDE their claim,
+	// because origin and destination are then the same claim. Only fluid
+	// arriving from outside (unclaimed land, or a different claim) is
+	// stopped.
+	//
+	// Hot path: every flowing fluid block hits this. Destination is checked
+	// first so that the overwhelmingly common case — fluid nowhere near a
+	// claim — costs one lookup and no second scan.
+	public static boolean blocksFluidFrom(final ServerLevel level, final BlockPos dest, final BlockPos origin) {
+		Claim destClaim = protectingClaim(level, dest);
+		if (destClaim == null) {
+			return false;
+		}
+		Claim originClaim = protectingClaim(level, origin);
+		return originClaim == null || originClaim.id() != destClaim.id();
+	}
+
+	// Should fire be stopped from burning away this block?
+	//
+	// Blocking fluid alone isn't enough to make a claim lava-proof: lava
+	// poured just outside still sets fire to whatever is flammable inside.
+	// Unlike fluids this applies to ALL fire in a claim, including the
+	// owner's own — same reasoning as explosions, where a claim's blocks are
+	// simply immune. You don't want your own house burning down by accident
+	// any more than you want a neighbour doing it on purpose.
+	public static boolean blocksFireDamage(final ServerLevel level, final BlockPos pos) {
+		return protectingClaim(level, pos) != null;
+	}
+
 	private static boolean checkDestroy(final ServerPlayer player, final BlockPos pos) {
 		Claim claim = claims(player).findAt(player.level().dimension(), pos.getX(), pos.getY(), pos.getZ());
 		if (claim == null || claim.canDestroy(player.getUUID())) {

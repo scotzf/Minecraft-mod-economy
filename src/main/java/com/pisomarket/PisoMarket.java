@@ -29,7 +29,11 @@ public class PisoMarket implements ModInitializer {
 	public void onInitialize() {
 		PisoCommands.register();
 		VaultSync.register();
+		com.pisomarket.economy.LeaderboardCommands.register();
+		com.pisomarket.economy.LeaderboardTracker.register();
 		HarvestFaucet.register();
+		com.pisomarket.economy.harvest.PisoEffects.register();
+		com.pisomarket.economy.harvest.HarvestPotionItem.register();
 		MarketCommands.register();
 		ShopCommands.register();
 		PisoShopContent.register();

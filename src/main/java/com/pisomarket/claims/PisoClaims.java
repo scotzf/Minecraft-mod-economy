@@ -1,5 +1,6 @@
 package com.pisomarket.claims;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -92,16 +93,64 @@ public class PisoClaims extends SavedData {
 		return null;
 	}
 
-	// Called on EVERY block break and place, so it stays a plain loop with
-	// an early bail-out rather than anything that allocates. The empty
-	// check matters: on a server with no claims this is the difference
-	// between an iterator per block event and none at all.
+	// Chunk-bucketed spatial index: chunk key -> ids of claims overlapping
+	// that chunk. Null means "needs rebuilding".
+	//
+	// findAt used to scan EVERY claim on every call, which was fine while it
+	// only ran on player block events. It is now also on the fluid-spread
+	// path (FluidSpreadProtectionMixin, twice per fluid movement) and the
+	// explosion path (once per exploded block), so a linear scan turned into
+	// O(claims) on genuinely hot code — and O(blocks x claims) for an
+	// explosion. Bucketing by chunk makes the common case O(1).
+	//
+	// It stores claim IDs, NOT Claim objects, and that is deliberate. Claim
+	// is an immutable record, so every rent tick, trust change and chest
+	// setting REPLACES the object in the map. An index holding object
+	// references would go stale on each of those and need rebuilding every
+	// 200 ticks (RentCollector's cadence), which would cost more than it
+	// saved. IDs are stable, so the index only needs rebuilding when a claim
+	// is actually created or removed.
+	private Map<Long, List<Integer>> chunkIndex;
+
+	private static long chunkKey(final int blockX, final int blockZ) {
+		// >> 4 converts a block coordinate to a chunk coordinate.
+		return ((long) (blockX >> 4) << 32) | ((blockZ >> 4) & 0xFFFFFFFFL);
+	}
+
+	private Map<Long, List<Integer>> index() {
+		if (chunkIndex == null) {
+			Map<Long, List<Integer>> built = new HashMap<>();
+			for (Claim claim : claims.values()) {
+				int minChunkX = claim.minX() >> 4;
+				int maxChunkX = claim.maxX() >> 4;
+				int minChunkZ = claim.minZ() >> 4;
+				int maxChunkZ = claim.maxZ() >> 4;
+				for (int cx = minChunkX; cx <= maxChunkX; cx++) {
+					for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
+						built.computeIfAbsent(((long) cx << 32) | (cz & 0xFFFFFFFFL), k -> new ArrayList<>())
+								.add(claim.id());
+					}
+				}
+			}
+			chunkIndex = built;
+		}
+		return chunkIndex;
+	}
+
+	// Called on every block break and place, every explosion position, and
+	// every fluid movement. The empty check matters: on a server with no
+	// claims this costs nothing at all.
 	public Claim findAt(final ResourceKey<Level> dimension, final int x, final int y, final int z) {
 		if (claims.isEmpty()) {
 			return null;
 		}
-		for (Claim claim : claims.values()) {
-			if (claim.dimension().equals(dimension) && x >= claim.minX() && x <= claim.maxX()
+		List<Integer> candidates = index().get(chunkKey(x, z));
+		if (candidates == null) {
+			return null; // no claim touches this chunk — the common case
+		}
+		for (int i = 0; i < candidates.size(); i++) {
+			Claim claim = claims.get(candidates.get(i));
+			if (claim != null && claim.dimension().equals(dimension) && x >= claim.minX() && x <= claim.maxX()
 					&& y >= claim.minY() && y <= claim.maxY() && z >= claim.minZ() && z <= claim.maxZ()) {
 				return claim;
 			}
@@ -120,6 +169,7 @@ public class PisoClaims extends SavedData {
 		int id = nextId++;
 		claims.put(id, new Claim(id, owner, dimension, minX, minY, minZ, maxX, maxY, maxZ,
 				new HashMap<>(), new HashMap<>(), ChestAccess.OWNER_ONLY, rentPerPeriod, 0L, 0));
+		chunkIndex = null; // a new box covers new chunks
 		setDirty();
 		return id;
 	}
@@ -172,6 +222,7 @@ public class PisoClaims extends SavedData {
 
 	public void remove(final int id) {
 		if (claims.remove(id) != null) {
+			chunkIndex = null; // those chunks may now be unclaimed
 			setDirty();
 		}
 	}

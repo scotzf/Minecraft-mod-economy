@@ -14,10 +14,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.NameAndId;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
-// Registers /balance, /pay, /deposit, /withdraw. See CLAUDE.md's "In-game
+// Registers /balance and /pay. See CLAUDE.md's "In-game
 // command surface" for the full documented behavior of each.
 public final class PisoCommands {
 	private PisoCommands() {
@@ -38,22 +36,15 @@ public final class PisoCommands {
 							)
 			);
 
-			dispatcher.register(
-					Commands.literal("deposit")
-							.executes(context -> deposit(context, Long.MAX_VALUE))
-							.then(
-									Commands.argument("amount", LongArgumentType.longArg(1))
-											.executes(context -> deposit(context, LongArgumentType.getLong(context, "amount")))
-							)
-			);
-
-			dispatcher.register(
-					Commands.literal("withdraw")
-							.then(
-									Commands.argument("amount", LongArgumentType.longArg(1))
-											.executes(PisoCommands::withdraw)
-							)
-			);
+			// /deposit and /withdraw are deliberately NOT registered.
+			//
+			// Moving money between hand and vault must happen at a Shop
+			// block, so the block is a real place players have to go rather
+			// than decoration. The equivalent logic lives in the menu's Vault
+			// view (PisoShopMenu.depositFromInventory, and the withdraw
+			// branch of clickedVault), which was always a separate
+			// implementation — it never called these commands — so removing
+			// them changes nothing for the GUI.
 		});
 	}
 
@@ -103,93 +94,4 @@ public final class PisoCommands {
 		return 1;
 	}
 
-	private static int deposit(
-			final com.mojang.brigadier.context.CommandContext<CommandSourceStack> context, final long requestedAmount
-	) throws CommandSyntaxException {
-		ServerPlayer player = context.getSource().getPlayerOrException();
-		long held = player.getInventory().countItem(Items.POISONOUS_POTATO);
-		long amount = Math.min(held, requestedAmount);
-
-		if (amount <= 0) {
-			context.getSource().sendFailure(Component.literal("You have no Poisonous Potato to deposit"));
-			return 0;
-		}
-
-		// Credit the vault BEFORE touching the inventory. If anything here
-		// throws, the player still has every item — a failed deposit
-		// should never be able to destroy items, only refuse to happen.
-		try {
-			vault(context.getSource().getServer()).deposit(player.getUUID(), amount);
-		} catch (RuntimeException e) {
-			com.pisomarket.PisoMarket.LOGGER.error("Deposit failed for {} amount {}", player.getGameProfile().name(), amount, e);
-			context.getSource().sendFailure(Component.literal("Deposit failed — nothing was taken. This has been logged."));
-			return 0;
-		}
-
-		removeItems(player, amount);
-		VaultSync.sync(player);
-		context.getSource().sendSuccess(() -> Component.literal("Deposited " + amount), false);
-		return 1;
-	}
-
-	private static int withdraw(final com.mojang.brigadier.context.CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-		ServerPlayer player = context.getSource().getPlayerOrException();
-		long amount = LongArgumentType.getLong(context, "amount");
-
-		PisoVault vault = vault(context.getSource().getServer());
-		if (!vault.withdraw(player.getUUID(), amount)) {
-			context.getSource().sendFailure(Component.literal("Insufficient balance"));
-			return 0;
-		}
-
-		long given = giveItems(player, amount);
-		if (given < amount) {
-			// Inventory didn't have room for everything — refund the part
-			// that couldn't be given so no money is destroyed.
-			vault.deposit(player.getUUID(), amount - given);
-		}
-		if (given == 0) {
-			context.getSource().sendFailure(Component.literal("No inventory space"));
-			return 0;
-		}
-
-		VaultSync.sync(player);
-		long finalGiven = given;
-		context.getSource().sendSuccess(() -> Component.literal("Withdrew " + finalGiven), false);
-		return 1;
-	}
-
-	// Removes exactly `amount` poisonous potatoes from the player's
-	// inventory. Caller must have already confirmed the player holds at
-	// least this many (see countItem in deposit()).
-	private static void removeItems(final ServerPlayer player, final long amount) {
-		long remaining = amount;
-		var inventory = player.getInventory();
-		for (int i = 0; i < inventory.getContainerSize() && remaining > 0; i++) {
-			ItemStack stack = inventory.getItem(i);
-			if (stack.getItem() == Items.POISONOUS_POTATO) {
-				int take = (int) Math.min(remaining, stack.getCount());
-				stack.shrink(take);
-				remaining -= take;
-			}
-		}
-	}
-
-	// Gives up to `amount` poisonous potatoes to the player, stopping early
-	// if the inventory fills up. Returns how many were actually given.
-	private static long giveItems(final ServerPlayer player, final long amount) {
-		long remaining = amount;
-		while (remaining > 0) {
-			int stackSize = (int) Math.min(remaining, 64);
-			ItemStack stack = new ItemStack(Items.POISONOUS_POTATO, stackSize);
-			boolean added = player.getInventory().add(stack);
-			if (!added || !stack.isEmpty()) {
-				int leftover = stack.isEmpty() ? 0 : stack.getCount();
-				remaining -= stackSize - leftover;
-				break;
-			}
-			remaining -= stackSize;
-		}
-		return amount - remaining;
-	}
 }

@@ -46,6 +46,7 @@ Check here before writing code that touches these:
 | `ServerCommandSource` | `CommandSourceStack` |
 | `CommandManager.literal` / `.argument` | `Commands.literal` / `.argument` |
 | `HudRenderCallback` (old immediate-mode HUD hook) | `HudElementRegistry` + `HudElement.extractRenderState(GuiGraphicsExtractor, DeltaTracker)` — a deferred render-state system |
+| `Level.getDayTime()` | `getOverworldClockTime()` (day/night clock, resettable by `/time set`) vs `getGameTime()` (monotonic total ticks — use this for timers) |
 
 **Traps that cost real debugging time — read these before writing similar code:**
 
@@ -107,9 +108,17 @@ is deliberately commands-first. In the server console (no leading slash):
 ```
 op <player>
 balance
-eco give <player> 1000
-eco total
+top
 ```
+
+**Piping commands into `runServer` does NOT work** — verified 2026-08-28.
+`printf 'list\nstop\n' | ./gradlew runServer` makes *every* command fail with
+"An unexpected error occurred while trying to execute that command",
+including plain vanilla ones, and the server doesn't even stop. So a piped
+run proves the mod **loads** cleanly (registration, mixin application,
+datapack parsing — all real signal) but proves nothing about whether a
+command *works*. Typing into an interactive console is a separate, untried
+path. Don't report a command as verified on the strength of a piped run.
 
 First run of `runServer` fails until the EULA (End User License Agreement) is
 accepted — set `eula=true` in `run/eula.txt` and re-run. This is expected, not
