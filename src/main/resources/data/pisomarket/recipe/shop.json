@@ -1,0 +1,14 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"category": "misc",
+	"key": {
+		"G": "minecraft:gold_ingot",
+		"E": "minecraft:ender_chest"
+	},
+	"pattern": [
+		"G G",
+		"GEG",
+		"G G"
+	],
+	"result": { "id": "pisomarket:shop", "count": 1 }
+}
