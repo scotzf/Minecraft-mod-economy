@@ -1,19 +1,33 @@
 package com.pisomarket.shop.system;
 
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.enchantment.Enchantment;
 
-// One catalog entry. id is stable across a server's lifetime (used by
-// /shop buy <id> and by the BlackMarket grid) — never reorder existing
-// entries in ShopCatalog, only append.
+// One catalog entry. `id` is stable across a server's lifetime (used by
+// /shop buy <id> and the BlackMarket grid) — never reorder or renumber
+// existing entries, only append.
 //
-// Scope note: only Tier 3 (consumables) and Tier 4 (prestige) from
-// CLAUDE.md's "System shop catalog" are implemented as real purchasable
-// items here. Tier 1 (cosmetics — chat colors, titles, particle trails) and
-// Tier 2 (convenience — extra /sethome slots, etc.) need systems that don't
-// exist yet (a title/prefix system, particle tick handling, /sethome
-// itself), so they're not in this catalog. Weekly rotation isn't
-// implemented either — it needs the day-tracking system also not built yet
-// (see CLAUDE.md's daily-cap design). Stock here is a fixed pool that
-// depletes and never refills until that's added.
-public record ShopEntry(int id, Item item, int tier, long price, int stock) {
+// restockDays: how many in-game days until this entry's stock refills to
+// `stock`. 1 in-game day = 20 real minutes, so 300 days is roughly 100
+// real hours — deliberately once-per-server for the legendary items.
+//
+// enchantment/enchantLevel are optional (null/0 = plain item). House rules,
+// set by the server owner:
+//   - exactly one enchantment per item, never a stack of them
+//   - never Unbreaking or Mending: gear wearing out IS the money sink, and
+//     both of those cancel it
+//   - never max level — always two below, so player-enchanted gear stays
+//     strictly better than anything the system sells
+public record ShopEntry(
+		int id, Item item, int tier, long price, int stock, int restockDays,
+		ResourceKey<Enchantment> enchantment, int enchantLevel
+) {
+	public ShopEntry(final int id, final Item item, final int tier, final long price, final int stock, final int restockDays) {
+		this(id, item, tier, price, stock, restockDays, null, 0);
+	}
+
+	public boolean isEnchanted() {
+		return enchantment != null && enchantLevel > 0;
+	}
 }

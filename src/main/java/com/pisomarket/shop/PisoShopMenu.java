@@ -60,7 +60,7 @@ public class PisoShopMenu extends AbstractContainerMenu {
 	// slot in this menu, which is a display-only button) plus +/- buttons
 	// to dial in a price without needing any text-input widget.
 	//
-	// SELL_ITEM_SLOT and VAULT_DEPOSIT_SLOT (below) MUST stay outside
+	// SELL_ITEM_SLOT MUST stay outside
 	// 0..ITEMS_PER_PAGE-1 (currently 0-17) — that range is where Buy and
 	// BlackMarket place real, valuable items for display. clicked() makes
 	// these two slots always-real regardless of which screen is active
@@ -73,37 +73,48 @@ public class PisoShopMenu extends AbstractContainerMenu {
 	// safety net in clearContent() made it worse by auto-*handing over*
 	// whatever was sitting there on every screen change, even items that
 	// were never the player's to take.
-	private static final int SELL_ITEM_HINT = 19;
-	private static final int SELL_ITEM_SLOT = 20;
-	private static final int SELL_MINUS_100 = 9;
-	private static final int SELL_MINUS_10 = 10;
-	private static final int SELL_MINUS_1 = 11;
-	private static final int SELL_PRICE_DISPLAY = 13;
-	private static final int SELL_PLUS_1 = 15;
-	private static final int SELL_PLUS_10 = 16;
-	private static final int SELL_PLUS_100 = 17;
-	private static final int SELL_CONFIRM = 22;
+	// Sell layout (row 1 = price readout, row 2 = confirm, row 3 = the
+	// -/+ buttons flanking the item slot, mirrored around centre):
+	//   row1:  .    .    .    .  [Price]  .    .    .    .
+	//   row2:  .    .    .    . [List it] .    .    .    .
+	//   row3: Back -100 -10  -1  [ITEM]  +1  +10  +100   .
+	private static final int SELL_PRICE_DISPLAY = 4;
+	private static final int SELL_CONFIRM = 13;
+	private static final int SELL_MINUS_100 = 19;
+	private static final int SELL_MINUS_10 = 20;
+	private static final int SELL_MINUS_1 = 21;
+	private static final int SELL_ITEM_SLOT = 22;
+	private static final int SELL_PLUS_1 = 23;
+	private static final int SELL_PLUS_10 = 24;
+	private static final int SELL_PLUS_100 = 25;
 
-	// Vault screen: a real slot to drop potatoes in for deposit (same
-	// pattern as Sell's item slot), plus +/- buttons to dial in a withdraw
-	// amount (same pattern as Sell's price picker). See the big comment on
-	// SELL_ITEM_SLOT above — same constraint applies here.
-	private static final int VAULT_DEPOSIT_HINT = 24;
-	private static final int VAULT_DEPOSIT_SLOT = 25;
-	private static final int VAULT_DEPOSIT_CONFIRM = 3;
-	private static final int VAULT_BALANCE_DISPLAY = 4;
-	private static final int VAULT_WITHDRAW_DISPLAY = 5;
-	private static final int VAULT_WITHDRAW_CONFIRM = 7;
-	private static final int VAULT_MINUS_100 = 9;
-	private static final int VAULT_MINUS_10 = 10;
-	private static final int VAULT_MINUS_1 = 11;
-	private static final int VAULT_PLUS_1 = 15;
-	private static final int VAULT_PLUS_10 = 16;
-	private static final int VAULT_PLUS_100 = 17;
+	// Vault layout — amount on top, deposit/withdraw beneath it, number
+	// buttons on the bottom row, everything mirrored around the centre
+	// column so nothing sits lopsided:
+	//   row1:  .    .  [Bal]  .    .    . [Amount] .    .
+	//   row2:  .    .    .  [Dep] [All] [Wdr] .    .    .
+	//   row3: Back -100 -10  -1     .   +1   +10  +100  .
+	//
+	// There is no deposit slot any more: deposit pulls the chosen amount
+	// straight from the player's inventory, so nothing has to be dragged.
+	private static final int VAULT_BALANCE_DISPLAY = 2;
+	private static final int VAULT_AMOUNT_DISPLAY = 6;
+	private static final int VAULT_DEPOSIT_CONFIRM = 12;
+	private static final int VAULT_DEPOSIT_ALL = 13;
+	private static final int VAULT_WITHDRAW_CONFIRM = 14;
+	private static final int VAULT_MINUS_100 = 19;
+	private static final int VAULT_MINUS_10 = 20;
+	private static final int VAULT_MINUS_1 = 21;
+	private static final int VAULT_PLUS_1 = 23;
+	private static final int VAULT_PLUS_10 = 24;
+	private static final int VAULT_PLUS_100 = 25;
 
 	private enum View { MAIN, MARKET, BLACKMARKET, SELL, VAULT }
 
-	private final Container content = new SimpleContainer(CONTENT_SIZE);
+	// PisoShopContainer (not a plain SimpleContainer) so the deed guard
+	// mixin can recognise the Sell slot as a legitimate destination — see
+	// ContainerDeedGuardMixin.
+	private final Container content = new PisoShopContainer(CONTENT_SIZE);
 	private ServerPlayer owner;
 	private View view = View.MAIN;
 	private int page;
@@ -148,23 +159,22 @@ public class PisoShopMenu extends AbstractContainerMenu {
 		return stack;
 	}
 
-	// Used for the "drop your item here ->" pointers next to the two real
-	// item slots — an arrow reads as a direction at a glance, where paper
-	// looked like just another label.
-	private static ItemStack namedArrow(final String label) {
-		ItemStack stack = new ItemStack(PisoShopContent.POINTER);
+	// Icon button — a real picture (green/red numbers, coin, arrows)
+	// instead of the identical-looking paper items this menu used before.
+	private static ItemStack icon(final net.minecraft.world.item.Item item, final String label) {
+		ItemStack stack = new ItemStack(item);
 		stack.set(DataComponents.CUSTOM_NAME, Component.literal(label));
 		return stack;
 	}
 
-	// Both real slots (Sell's item slot, Vault's deposit slot) hold actual
-	// items outside of any inventory while their screen is open — always
-	// return them before wiping, on every view transition, not just the
-	// ones each screen's own "Back" button happens to think of. Closes off
-	// the item-loss risk regardless of which path leads here.
+	// Sell's item slot holds a real item outside of any inventory while
+	// that screen is open — always return it before wiping, on every view
+	// transition, not just the ones each screen's own "Back" button happens
+	// to think of. Closes off the item-loss risk regardless of path.
+	// (The Vault no longer has a slot at all — deposit takes its amount
+	// straight from the player's inventory.)
 	private void clearContent() {
 		returnSlotItemIfAny(SELL_ITEM_SLOT);
-		returnSlotItemIfAny(VAULT_DEPOSIT_SLOT);
 		for (int i = 0; i < CONTENT_SIZE; i++) {
 			content.setItem(i, ItemStack.EMPTY);
 		}
@@ -183,23 +193,24 @@ public class PisoShopMenu extends AbstractContainerMenu {
 		view = View.VAULT;
 		withdrawAmount = 10;
 		clearContent();
-		content.setItem(VAULT_DEPOSIT_CONFIRM, namedBook("Deposit"));
-		content.setItem(VAULT_WITHDRAW_CONFIRM, namedBook("Withdraw"));
-		content.setItem(VAULT_MINUS_100, namedPaper("-100"));
-		content.setItem(VAULT_MINUS_10, namedPaper("-10"));
-		content.setItem(VAULT_MINUS_1, namedPaper("-1"));
-		content.setItem(VAULT_PLUS_1, namedPaper("+1"));
-		content.setItem(VAULT_PLUS_10, namedPaper("+10"));
-		content.setItem(VAULT_PLUS_100, namedPaper("+100"));
-		content.setItem(VAULT_DEPOSIT_HINT, namedArrow("Drop potatoes to deposit ->"));
+		content.setItem(VAULT_DEPOSIT_CONFIRM, icon(PisoUiItems.DEPOSIT, "Deposit"));
+		content.setItem(VAULT_DEPOSIT_ALL, icon(PisoUiItems.DEPOSIT_ALL, "Deposit all potatoes"));
+		content.setItem(VAULT_WITHDRAW_CONFIRM, icon(PisoUiItems.WITHDRAW, "Withdraw"));
+		content.setItem(VAULT_MINUS_100, icon(PisoUiItems.MINUS_100, "-100"));
+		content.setItem(VAULT_MINUS_10, icon(PisoUiItems.MINUS_10, "-10"));
+		content.setItem(VAULT_MINUS_1, icon(PisoUiItems.MINUS_1, "-1"));
+		content.setItem(VAULT_PLUS_1, icon(PisoUiItems.PLUS_1, "+1"));
+		content.setItem(VAULT_PLUS_10, icon(PisoUiItems.PLUS_10, "+10"));
+		content.setItem(VAULT_PLUS_100, icon(PisoUiItems.PLUS_100, "+100"));
 		content.setItem(NAV_BACK, namedBook("< Back"));
 		refreshVaultDisplay();
 	}
 
 	private void refreshVaultDisplay() {
 		long balance = owner.level().getServer().getDataStorage().computeIfAbsent(com.pisomarket.economy.PisoVault.TYPE).getBalance(owner.getUUID());
-		content.setItem(VAULT_BALANCE_DISPLAY, namedPaper("Balance: " + balance));
-		content.setItem(VAULT_WITHDRAW_DISPLAY, namedPaper("Withdraw: " + withdrawAmount));
+		long held = owner.getInventory().countItem(Items.POISONOUS_POTATO);
+		content.setItem(VAULT_BALANCE_DISPLAY, icon(PisoUiItems.BALANCE, "Balance: " + balance + "  (carrying " + held + ")"));
+		content.setItem(VAULT_AMOUNT_DISPLAY, icon(PisoUiItems.AMOUNT, "Amount: " + withdrawAmount));
 	}
 
 	private void showMarket(final int requestedPage) {
@@ -258,16 +269,26 @@ public class PisoShopMenu extends AbstractContainerMenu {
 
 	private ItemStack displayFor(final Object row, final PisoShopStock stock) {
 		if (row instanceof ShopEntry entry) {
-			int remaining = stock.remainingFor(entry);
-			ItemStack display = new ItemStack(entry.item());
+			var server = owner.level().getServer();
+			int remaining = stock.remainingFor(server, entry);
+			ItemStack display = com.pisomarket.shop.system.ShopStacks.build(server, entry, 1);
+			String suffix;
+			if (remaining > 0) {
+				suffix = " (" + remaining + " left)";
+			} else {
+				// Sold out — show when it comes back rather than leaving
+				// the player guessing whether it ever will.
+				int days = stock.daysUntilRestock(server, entry);
+				suffix = " (SOLD OUT — restocks in " + days + " day" + (days == 1 ? "" : "s") + ")";
+			}
 			display.set(
 					DataComponents.CUSTOM_NAME,
-					Component.literal(display.getHoverName().getString() + " — " + entry.price() + " (" + remaining + " left)")
+					Component.literal(display.getHoverName().getString() + " — " + entry.price() + suffix)
 			);
 			return display;
 		}
 		DeedCatalog.DeedSize size = (DeedCatalog.DeedSize) row;
-		ItemStack display = LandDeedItem.createUnbound(ClaimsContent.LAND_DEED, size.label(), size.width(), size.length(), size.height());
+		ItemStack display = LandDeedItem.createUnbound(ClaimsContent.LAND_DEED, size.label(), size.width(), size.length(), size.height(), size.price());
 		display.set(DataComponents.CUSTOM_NAME, Component.literal("Land Deed — " + size.label() + " — " + size.price()));
 		return display;
 	}
@@ -276,14 +297,16 @@ public class PisoShopMenu extends AbstractContainerMenu {
 		view = View.SELL;
 		sellPrice = 10;
 		clearContent();
-		content.setItem(SELL_MINUS_100, namedPaper("-100"));
-		content.setItem(SELL_MINUS_10, namedPaper("-10"));
-		content.setItem(SELL_MINUS_1, namedPaper("-1"));
-		content.setItem(SELL_PLUS_1, namedPaper("+1"));
-		content.setItem(SELL_PLUS_10, namedPaper("+10"));
-		content.setItem(SELL_PLUS_100, namedPaper("+100"));
-		content.setItem(SELL_CONFIRM, namedBook("List it"));
-		content.setItem(SELL_ITEM_HINT, namedArrow("Drop item to sell ->"));
+		content.setItem(SELL_MINUS_100, icon(PisoUiItems.MINUS_100, "-100"));
+		content.setItem(SELL_MINUS_10, icon(PisoUiItems.MINUS_10, "-10"));
+		content.setItem(SELL_MINUS_1, icon(PisoUiItems.MINUS_1, "-1"));
+		content.setItem(SELL_PLUS_1, icon(PisoUiItems.PLUS_1, "+1"));
+		content.setItem(SELL_PLUS_10, icon(PisoUiItems.PLUS_10, "+10"));
+		content.setItem(SELL_PLUS_100, icon(PisoUiItems.PLUS_100, "+100"));
+		// The item slot sits in the middle of the bottom row, between the
+		// -/+ price buttons; say so on the confirm button since there's no
+		// room for a separate pointer in a symmetric row.
+		content.setItem(SELL_CONFIRM, namedBook("List it (put the item in the empty slot below)"));
 		content.setItem(NAV_BACK, namedBook("< Back"));
 		refreshSellDisplay();
 	}
@@ -292,7 +315,7 @@ public class PisoShopMenu extends AbstractContainerMenu {
 	// so adjusting the price doesn't disturb whatever the player already
 	// dragged in there.
 	private void refreshSellDisplay() {
-		content.setItem(SELL_PRICE_DISPLAY, namedPaper("Price: " + sellPrice));
+		content.setItem(SELL_PRICE_DISPLAY, icon(PisoUiItems.AMOUNT, "Price: " + sellPrice));
 	}
 
 	private void setupNav(final int currentPage, final int totalPages) {
@@ -324,7 +347,7 @@ public class PisoShopMenu extends AbstractContainerMenu {
 		// server-side placement itself was fine. Fix: these specific slot
 		// ids are unconditionally real slots regardless of view — no
 		// client/server-shared state needed at all.
-		if (slotId >= CONTENT_SIZE || slotId == SELL_ITEM_SLOT || slotId == VAULT_DEPOSIT_SLOT) {
+		if (slotId >= CONTENT_SIZE || slotId == SELL_ITEM_SLOT) {
 			super.clicked(slotId, button, containerInput, player);
 			return;
 		}
@@ -376,25 +399,12 @@ public class PisoShopMenu extends AbstractContainerMenu {
 		}
 
 		if (slotId == VAULT_DEPOSIT_CONFIRM) {
-			ItemStack toDeposit = content.getItem(VAULT_DEPOSIT_SLOT);
-			if (toDeposit.isEmpty()) {
-				player.sendSystemMessage(Component.literal("Put potatoes in the slot first"));
-				return;
-			}
-			if (toDeposit.getItem() != Items.POISONOUS_POTATO) {
-				player.sendSystemMessage(Component.literal("Only Poisonous Potato can be deposited"));
-				return;
-			}
-			// Credit first, then clear the slot — same failure-can't-lose-
-			// items ordering as /deposit (see PisoCommands.deposit).
-			long amount = toDeposit.getCount();
-			com.pisomarket.economy.PisoVault vault =
-					player.level().getServer().getDataStorage().computeIfAbsent(com.pisomarket.economy.PisoVault.TYPE);
-			vault.deposit(player.getUUID(), amount);
-			content.setItem(VAULT_DEPOSIT_SLOT, ItemStack.EMPTY);
-			com.pisomarket.economy.VaultSync.sync(player);
-			player.sendSystemMessage(Component.literal("Deposited " + amount));
-			refreshVaultDisplay();
+			depositFromInventory(player, withdrawAmount);
+			return;
+		}
+
+		if (slotId == VAULT_DEPOSIT_ALL) {
+			depositFromInventory(player, owner.getInventory().countItem(Items.POISONOUS_POTATO));
 			return;
 		}
 
@@ -432,6 +442,40 @@ public class PisoShopMenu extends AbstractContainerMenu {
 
 			player.sendSystemMessage(Component.literal("Withdrew " + actuallyGiven));
 			refreshVaultDisplay();
+		}
+	}
+
+	// Takes `requested` potatoes straight out of the player's inventory
+	// (capped at what they actually carry) and credits the vault. Credits
+	// before removing, same failure-can't-destroy-items ordering as
+	// /deposit — see PisoCommands.deposit.
+	private void depositFromInventory(final ServerPlayer player, final long requested) {
+		long held = player.getInventory().countItem(Items.POISONOUS_POTATO);
+		long amount = Math.min(held, requested);
+		if (amount <= 0) {
+			player.sendSystemMessage(Component.literal("You aren't carrying any Poisonous Potato"));
+			return;
+		}
+
+		com.pisomarket.economy.PisoVault vault =
+				player.level().getServer().getDataStorage().computeIfAbsent(com.pisomarket.economy.PisoVault.TYPE);
+		vault.deposit(player.getUUID(), amount);
+		removePotatoes(player, amount);
+		com.pisomarket.economy.VaultSync.sync(player);
+		player.sendSystemMessage(Component.literal("Deposited " + amount));
+		refreshVaultDisplay();
+	}
+
+	private static void removePotatoes(final ServerPlayer player, final long amount) {
+		long remaining = amount;
+		var inventory = player.getInventory();
+		for (int i = 0; i < inventory.getContainerSize() && remaining > 0; i++) {
+			ItemStack stack = inventory.getItem(i);
+			if (stack.getItem() == Items.POISONOUS_POTATO) {
+				int take = (int) Math.min(remaining, stack.getCount());
+				stack.shrink(take);
+				remaining -= take;
+			}
 		}
 	}
 
@@ -489,7 +533,6 @@ public class PisoShopMenu extends AbstractContainerMenu {
 	public void removed(final Player player) {
 		super.removed(player);
 		returnSlotItemIfAny(SELL_ITEM_SLOT);
-		returnSlotItemIfAny(VAULT_DEPOSIT_SLOT);
 	}
 
 	private void clickedMarket(final int slotId, final ServerPlayer player) {

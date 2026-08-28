@@ -29,7 +29,7 @@ public final class PisoCreativeTabs {
 			// width/length/height so it's usable straight out of creative.
 			for (DeedCatalog.DeedSize size : DeedCatalog.SIZES) {
 				output.accept(
-						LandDeedItem.createUnbound(ClaimsContent.LAND_DEED, size.label(), size.width(), size.length(), size.height()),
+						LandDeedItem.createUnbound(ClaimsContent.LAND_DEED, size.label(), size.width(), size.length(), size.height(), size.price()),
 						CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS
 				);
 			}

@@ -33,8 +33,14 @@ public class PisoVault extends SavedData {
 		this(new HashMap<>());
 	}
 
+	// MUST copy into a mutable map. Codec.unboundedMap decodes into an
+	// ImmutableMap, so taking the decoded map directly meant every vault
+	// LOADED FROM DISK was unmodifiable and the first deposit/withdraw
+	// threw UnsupportedOperationException. Fresh worlds worked (the no-arg
+	// constructor makes a HashMap), which is why this only showed up as
+	// "/deposit failed and ate my potatoes" on an existing save.
 	private PisoVault(final Map<UUID, Long> balances) {
-		this.balances = balances;
+		this.balances = new HashMap<>(balances);
 	}
 
 	private Map<UUID, Long> getBalances() {

@@ -40,13 +40,28 @@ public class RestrictedChestMenu extends AbstractContainerMenu {
 	@Override
 	public void clicked(final int slotId, final int button, final ContainerInput containerInput, final Player player) {
 		if (slotId >= 0 && slotId < CHEST_SIZE) {
-			// Only allow placing into a currently-empty chest slot while
-			// holding something on the cursor — anything else touching a
-			// chest slot (taking from it, swapping, etc.) is blocked.
+			// Inserting only. The chest slot's contents may only ever grow,
+			// never shrink or change type, so there is no path here that
+			// removes anything — that is the whole safety guarantee.
 			ItemStack carried = getCarried();
-			if (chest.getItem(slotId).isEmpty() && !carried.isEmpty()) {
+			if (carried.isEmpty()) {
+				return;
+			}
+
+			ItemStack existing = chest.getItem(slotId);
+			if (existing.isEmpty()) {
 				chest.setItem(slotId, carried.copyWithCount(1));
 				carried.shrink(1);
+				return;
+			}
+
+			// Topping up a matching stack is safe and was previously
+			// refused, which made put-only chests needlessly clunky —
+			// you could only ever use empty slots.
+			if (ItemStack.isSameItemSameComponents(existing, carried) && existing.getCount() < existing.getMaxStackSize()) {
+				existing.grow(1);
+				carried.shrink(1);
+				chest.setChanged();
 			}
 			return;
 		}

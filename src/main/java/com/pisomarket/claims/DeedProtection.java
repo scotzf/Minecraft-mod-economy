@@ -28,6 +28,12 @@ public final class DeedProtection {
 		return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getInt("claimId").orElse(-1);
 	}
 
+	public static void warnCannotStore(final ServerPlayer player) {
+		player.sendSystemMessage(Component.literal(
+				"A bound Land Deed can only be kept in your own inventory or your ender chest. Sell it on the market to transfer the land."
+		));
+	}
+
 	public static void warnCannotDrop(final ServerPlayer player) {
 		player.sendSystemMessage(Component.literal(
 				"You can't drop a bound Land Deed — keep it, store it in an ender chest, or sell it on the market to transfer the land."

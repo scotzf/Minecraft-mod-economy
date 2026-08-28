@@ -101,7 +101,7 @@ public final class DeedCommands {
 			return "Insufficient balance";
 		}
 
-		ItemStack stack = LandDeedItem.createUnbound(ClaimsContent.LAND_DEED, size.label(), size.width(), size.length(), size.height());
+		ItemStack stack = LandDeedItem.createUnbound(ClaimsContent.LAND_DEED, size.label(), size.width(), size.length(), size.height(), size.price());
 		if (!InventoryUtil.giveItem(player, stack)) {
 			vault.deposit(player.getUUID(), size.price());
 			com.pisomarket.economy.VaultSync.sync(player);

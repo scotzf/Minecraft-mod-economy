@@ -87,7 +87,17 @@ public final class ClaimCommands {
 			int w = claim.maxX() - claim.minX() + 1;
 			int l = claim.maxZ() - claim.minZ() + 1;
 			int h = claim.maxY() - claim.minY() + 1;
-			String line = "#" + claim.id() + " — " + w + "x" + l + "x" + h + " at (" + claim.minX() + "," + claim.minY() + "," + claim.minZ() + ")";
+			String rent;
+			if (claim.rentPerPeriod() <= 0) {
+				rent = " — no rent";
+			} else if (claim.rentUnpaid()) {
+				int left = Claim.RENT_GRACE_PERIODS - claim.unpaidPeriods();
+				rent = " — RENT UNPAID, protection OFF, released after " + left + " more missed";
+			} else {
+				rent = " — rent " + claim.rentPerPeriod() + " every " + Claim.RENT_PERIOD_DAYS + " days played";
+			}
+			String line = "#" + claim.id() + " — " + w + "x" + l + "x" + h
+					+ " at (" + claim.minX() + "," + claim.minY() + "," + claim.minZ() + ")" + rent;
 			context.getSource().sendSuccess(() -> Component.literal(line), false);
 		}
 		return 1;
@@ -111,7 +121,7 @@ public final class ClaimCommands {
 		}
 
 		NameAndId target = GameProfileArgument.getGameProfiles(context, "player").iterator().next();
-		claims(player).setTrust(claim.id(), target.id(), level);
+		claims(player).setTrust(claim.id(), target.id(), target.name(), level);
 		String name = target.name();
 		context.getSource().sendSuccess(() -> Component.literal("Trusted " + name + " (" + levelArg.toLowerCase() + ") on claim #" + claim.id()), false);
 		return 1;
@@ -126,7 +136,7 @@ public final class ClaimCommands {
 		}
 
 		NameAndId target = GameProfileArgument.getGameProfiles(context, "player").iterator().next();
-		claims(player).setTrust(claim.id(), target.id(), null);
+		claims(player).setTrust(claim.id(), target.id(), target.name(), null);
 		String name = target.name();
 		context.getSource().sendSuccess(() -> Component.literal("Untrusted " + name + " on claim #" + claim.id()), false);
 		return 1;

@@ -32,16 +32,25 @@ import net.minecraft.server.network.Filterable;
 // clickable written-book management screen — but only while standing
 // inside the claim itself; otherwise just a reminder message.
 public class LandDeedItem extends Item {
+	// A claim starts this many blocks BELOW the block you activate on, with
+	// the remaining height going up. Without this, digging a basement under
+	// your own house left you outside your own claim and grief-able.
+	private static final int DEPTH_BELOW_GROUND = 4;
+
 	public LandDeedItem(final Properties properties) {
 		super(properties);
 	}
 
-	public static ItemStack createUnbound(final Item item, final String label, final int width, final int length, final int height) {
+	// price is carried on the deed so the claim it creates knows what rent
+	// to charge (see RentCollector) — the claim itself has no other way to
+	// know which size it came from once activated.
+	public static ItemStack createUnbound(final Item item, final String label, final int width, final int length, final int height, final long price) {
 		ItemStack stack = new ItemStack(item);
 		CompoundTag tag = new CompoundTag();
 		tag.putInt("width", width);
 		tag.putInt("length", length);
 		tag.putInt("height", height);
+		tag.putLong("price", price);
 		CustomData.set(DataComponents.CUSTOM_DATA, stack, tag);
 		stack.set(DataComponents.CUSTOM_NAME, Component.literal("Land Deed — " + label + " (" + width + "x" + length + "x" + height + ")"));
 		return stack;
@@ -105,7 +114,7 @@ public class LandDeedItem extends Item {
 		int minZ = ground.getZ() - length / 2;
 		int maxX = minX + width - 1;
 		int maxZ = minZ + length - 1;
-		int minY = ground.getY() + 1;
+		int minY = ground.getY() - DEPTH_BELOW_GROUND;
 		int maxY = minY + height - 1;
 
 		PisoClaims claims = player.level().getServer().getDataStorage().computeIfAbsent(PisoClaims.TYPE);
@@ -162,7 +171,7 @@ public class LandDeedItem extends Item {
 		int minZ = gz - length / 2;
 		int maxX = minX + width - 1;
 		int maxZ = minZ + length - 1;
-		int minY = gy + 1;
+		int minY = gy - DEPTH_BELOW_GROUND;
 		int maxY = minY + height - 1;
 
 		PisoClaims claims = player.level().getServer().getDataStorage().computeIfAbsent(PisoClaims.TYPE);
@@ -172,7 +181,9 @@ public class LandDeedItem extends Item {
 			return "Can't claim here — too close to claim #" + overlap.id() + ".";
 		}
 
-		int claimId = claims.create(player.getUUID(), dimension, minX, minY, minZ, maxX, maxY, maxZ);
+		long deedPrice = tag.getLong("price").orElse(0L);
+		long rent = deedPrice > 0 ? RentCollector.rentForDeedPrice(deedPrice) : 0L;
+		int claimId = claims.create(player.getUUID(), dimension, minX, minY, minZ, maxX, maxY, maxZ, rent);
 		tag.putInt("claimId", claimId);
 		tag.remove("pendingX");
 		tag.remove("pendingY");
@@ -245,20 +256,16 @@ public class LandDeedItem extends Item {
 		} else {
 			page.append(Component.literal("Trusted:\n"));
 			for (Map.Entry<UUID, TrustLevel> entry : claim.trusted().entrySet()) {
-				ServerPlayer trustedOnline = server.getPlayerList().getPlayer(entry.getKey());
+				boolean online = server.getPlayerList().getPlayer(entry.getKey()) != null;
 				String levelLabel = entry.getValue().name().toLowerCase();
-				if (trustedOnline != null) {
-					String name = trustedOnline.getGameProfile().name();
-					page.append(Component.literal(name + " (" + levelLabel + ") "));
-					appendLevelLinks(page, name);
-					page.append(Component.literal(" "))
-							.append(Component.literal("[Remove]").withStyle(s -> s.withClickEvent(new ClickEvent.RunCommand("/untrust " + name))));
-				} else {
-					// Offline — no clean way to turn a UUID back into a name
-					// for the /untrust command without new lookup plumbing,
-					// so this one stays text-only for now.
-					page.append(Component.literal(entry.getKey() + " (" + levelLabel + ", offline)"));
-				}
+				// The name was recorded when trust was granted, so offline
+				// players get working buttons too — this used to fall back
+				// to a raw UUID with no usable [Remove].
+				String name = claim.nameFor(entry.getKey());
+				page.append(Component.literal(name + " (" + levelLabel + (online ? "" : ", offline") + ") "));
+				appendLevelLinks(page, name);
+				page.append(Component.literal(" "))
+						.append(Component.literal("[Remove]").withStyle(s -> s.withClickEvent(new ClickEvent.RunCommand("/untrust " + name))));
 				page.append(Component.literal("\n"));
 			}
 			page.append(Component.literal("\n"));

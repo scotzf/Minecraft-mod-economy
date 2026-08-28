@@ -47,6 +47,26 @@ Check here before writing code that touches these:
 | `CommandManager.literal` / `.argument` | `Commands.literal` / `.argument` |
 | `HudRenderCallback` (old immediate-mode HUD hook) | `HudElementRegistry` + `HudElement.extractRenderState(GuiGraphicsExtractor, DeltaTracker)` — a deferred render-state system |
 
+**Traps that cost real debugging time — read these before writing similar code:**
+
+- **`Codec.unboundedMap` decodes into an IMMUTABLE map.** A `SavedData` that
+  stores the decoded map directly works fine on a fresh world (the no-arg
+  constructor makes a `HashMap`) and then throws
+  `UnsupportedOperationException` on the first write *after being loaded
+  from disk*. This is what made `/deposit` fail and destroy items on an
+  existing save. Always `new HashMap<>(decoded)` in the decode constructor.
+- **`Player.openItemGui(stack, hand)` ignores the stack you pass.** It only
+  sends `ClientboundOpenBookPacket(hand)`; the client then reads
+  `getItemInHand(hand)` and renders *that* item's `WRITTEN_BOOK_CONTENT`.
+  To open a book UI, write the content onto the item actually in the
+  player's hand (see `LandDeedItem.openBook`).
+- **`AbstractContainerMenu.quickMoveStack` is abstract** — `@Inject` into it
+  fails at load with "insnNode is null". Shift-click arrives at `clicked()`
+  as `ContainerInput.QUICK_MOVE`; handle it there.
+- **Menu `clicked()` runs on the client too** (for prediction). Fields the
+  server mutates (like a current-view enum) are always stale client-side,
+  so branching on them there silently breaks slot interaction.
+
 When in doubt, decompile and grep rather than trust a remembered snippet —
 see "Reading failures" below for the workflow.
 
@@ -198,39 +218,57 @@ means no arbitrage loop.
 
 ## System shop catalog
 
-**Implementation status:** Tiers 3 and 4 are real and purchasable
-(`ShopCatalog.java`, `/shop browse`, `/shop buy`, and the shop block's
-BlackMarket grid). Tiers 1 and 2 are **not built** — they need systems that
-don't exist yet (a chat-color/title/prefix system, particle-trail tick
-handling, `/sethome`, per-player market-slot limits). Weekly rotation isn't
-built either — it needs the day-tracking system the daily drop cap also
-depends on, which hasn't been built. Stock right now is a fixed pool that
-depletes and never refills. Prices use a starting multiplier of 5 (still
-"tune after the systems run," not final).
+**Pricing is a formula, not per-item guesswork** (`ShopCatalog.java`):
 
-Hard rule: never stock anything players can produce. Every such item stocked
-is a customer taken from the player market.
+```
+price = material unit value  x  recipe unit count
+```
 
-**Tier 1 — cosmetic** (backbone; infinite supply, price can never be "wrong")
-chat name colors, titles/prefixes, custom banner patterns, non-vanilla dyed
-leather armor, particle trails, player-head decorations, custom join messages
+Material units: wood 1, stone 2, gold 6, iron 7, diamond 70.
+Recipe units: shovel 1, sword/hoe 2, pickaxe/axe 3, boots 4, helmet 5,
+leggings 7, chestplate 8.
 
-**Tier 2 — convenience** (recurring revenue; price climbs per additional unit)
-extra `/sethome` slots, extra market listing slots, extra chunk allowance,
-personal warp points
+So an iron pickaxe is 7x3 = 21 and a diamond pickaxe 70x3 = 210 — a clean
+1:10 iron-to-diamond ratio. Enchanted variants add 60% of the base price
+per enchantment level on top.
 
-**Tier 3 — consumables** (destroyed on use, never accumulate)
-Bottles o' Enchanting, name tags, single-enchantment books, bulk firework
-rockets, saddles, horse armor
+**Everything is ultimately priced in potato-harvests.** The faucet is 2.5%,
+so **1 Piso = 40 mature potatoes harvested**. That is the real exchange
+rate; a 210 diamond pickaxe costs 8,400 harvests. Small plot (81 crops)
+earns ~2 per full harvest, a big automated farm ~50. Prices are therefore
+calibrated for someone with a real farm — if casual players can't
+participate, raise the drop rate rather than fiddling with individual
+prices.
 
-**Tier 4 — prestige** (big-ticket, mops up hoarded balances)
-elytra, enchanted golden apple, netherite upgrade smithing template, Heart of
-the Sea, echo shard
+**Why stocking craftable tools does NOT break the rule below:** tools wear
+out. Selling them creates *recurring* demand instead of permanently
+replacing a player seller. That is exactly why **Unbreaking and Mending are
+banned** from the shop's enchant list — both cancel the durability sink
+that makes this safe.
 
-Tiers 3 and 4 rotate weekly with limited quantities.
+Enchanted stock rules: exactly **one** enchantment per item, never
+Unbreaking or Mending, and always **two levels below max** so
+player-enchanted gear stays strictly better than anything the system sells.
 
-Price as ratios, then scale by one multiplier:
-`cosmetic 1 : consumable 2 : convenience 5 : prestige 200`
+Hard rule, unchanged: never stock anything players can produce *that does
+not wear out*. Every such item stocked is a customer taken from the player
+market.
+
+**Tier 1 — tools and armour** (stone/iron/gold/diamond, plain)
+**Tier 2 — single-enchant gear** (Efficiency III, Sharpness III, Protection
+II, Fortune I, Power III)
+**Tier 3 — consumables** (bottles o' enchanting, name tags, saddles,
+fireworks, ender pearls)
+**Tier 4 — prestige** (echo shard, Heart of the Sea, enchanted golden apple,
+netherite template, elytra)
+
+Cosmetics and convenience perks (chat colours, titles, `/sethome` slots) are
+**not built** — they need systems that don't exist yet.
+
+**Restocking is per-item, in in-game days** (`ShopEntry.restockDays`,
+applied lazily in `PisoShopStock`). Cheap tools 1 day, diamond gear 7,
+enchanted 7-14, elytra 300. Note 1 in-game day = 20 real minutes, so 300
+days is roughly 100 real hours — deliberately once-per-server.
 
 ## Shop UI
 
@@ -285,12 +323,28 @@ so this doc keeps rent applying once a claim exists (deeds only change how
 a claim is *created* and *sized*, not how it's paid for). Flag if claims
 should actually become a one-time permanent purchase instead.
 
+**Rent is implemented** (`RentCollector`, `Claim.rentPerPeriod`). Decided
+numbers:
+
+- **1% of the deed's purchase price every 4 in-game days logged in.**
+  That is deliberately the integer form of "0.25% per day" — at 0.25% a
+  Small claim costs 0.5/day, and rounding fractional currency is exactly
+  the duplication exploit this doc warns about elsewhere. Small 2, Medium
+  5, Large 10 per period.
+- Land therefore costs its own purchase price again only after ~400
+  in-game days of *play* (~130 real hours) — long enough to enjoy and earn
+  back, which was the goal.
+- **Unpaid → protection off immediately, claim released after 4 missed
+  payments** (~16 in-game days of play). Blocks are never touched either
+  way.
+
 Existing non-negotiable rules, unchanged:
 
 - **Expiry removes protection, never blocks.** Deleting builds over unpaid
   rent loses players permanently.
-- **Rent freezes while offline.** Charge per *day logged in*, not per calendar
-  day. A player away two weeks must not return to an unprotected base.
+- **Rent freezes while offline.** Charged per *day logged in*, not per
+  calendar day. Enforced by resetting each claim's billing clock on login
+  without charging, so an absence is never billed retroactively.
 - **Auto-renew from balance**, with a warning when the balance won't cover the
   next period.
 - **Progressive pricing by area** — small deeds cheap, large deeds

@@ -33,11 +33,13 @@ public class PisoMarket implements ModInitializer {
 		MarketCommands.register();
 		ShopCommands.register();
 		PisoShopContent.register();
+		com.pisomarket.shop.PisoUiItems.register();
 		ClaimsContent.register();
 		ClaimCommands.register();
 		ClaimProtection.register();
 		DeedCommands.register();
 		TerritoryVisualizer.register();
+		com.pisomarket.claims.RentCollector.register();
 		LockContent.register();
 		ChestAccessGuard.register();
 		PisoCreativeTabs.register();

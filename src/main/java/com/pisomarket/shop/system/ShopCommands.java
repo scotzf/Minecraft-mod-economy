@@ -66,8 +66,8 @@ public final class ShopCommands {
 		PisoShopStock stock = stock(context.getSource().getServer());
 		context.getSource().sendSuccess(() -> Component.literal("BlackMarket"), false);
 		for (ShopEntry entry : shown) {
-			int remaining = stock.remainingFor(entry);
-			String line = "#" + entry.id() + " — " + new ItemStack(entry.item()).getHoverName().getString()
+			int remaining = stock.remainingFor(context.getSource().getServer(), entry);
+			String line = "#" + entry.id() + " — " + ShopStacks.build(context.getSource().getServer(), entry, 1).getHoverName().getString()
 					+ " — " + entry.price() + " (tier " + entry.tier() + ", " + remaining + " left)";
 			context.getSource().sendSuccess(() -> Component.literal(line), false);
 		}
@@ -98,7 +98,7 @@ public final class ShopCommands {
 		}
 
 		PisoShopStock stock = stock(server);
-		if (!stock.take(entry, qty)) {
+		if (!stock.take(server, entry, qty)) {
 			return "Not enough stock";
 		}
 
@@ -108,14 +108,14 @@ public final class ShopCommands {
 			// Undo the stock deduction — the system shop never actually
 			// removed the items from the world, so this is just restoring
 			// the counter, not a real refund.
-			stock.take(entry, -qty);
+			stock.take(server, entry, -qty);
 			return "Insufficient balance";
 		}
 
-		ItemStack stack = new ItemStack(entry.item(), qty);
+		ItemStack stack = ShopStacks.build(server, entry, qty);
 		if (!InventoryUtil.giveItem(player, stack)) {
 			vault.deposit(player.getUUID(), totalPrice);
-			stock.take(entry, -qty);
+			stock.take(server, entry, -qty);
 			VaultSync.sync(player);
 			return "No inventory space";
 		}

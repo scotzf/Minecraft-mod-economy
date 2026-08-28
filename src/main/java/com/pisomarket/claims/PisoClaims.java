@@ -1,5 +1,7 @@
 package com.pisomarket.claims;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -59,10 +61,15 @@ public class PisoClaims extends SavedData {
 		return claims.get(id);
 	}
 
-	public List<Claim> all() {
-		return List.copyOf(claims.values());
+	// Read-only VIEW, not a copy. This is read on a repeating tick (see
+	// TerritoryVisualizer) — List.copyOf allocated a fresh list every time,
+	// several times a second, for data that usually hasn't changed.
+	public Collection<Claim> all() {
+		return Collections.unmodifiableCollection(claims.values());
 	}
 
+	// Returns a copy on purpose — callers iterate this while mutating or
+	// removing claims (see RentCollector), which a live view can't survive.
 	public List<Claim> byOwner(final UUID owner) {
 		return claims.values().stream().filter(c -> c.owner().equals(owner)).toList();
 	}
@@ -79,7 +86,14 @@ public class PisoClaims extends SavedData {
 		return null;
 	}
 
+	// Called on EVERY block break and place, so it stays a plain loop with
+	// an early bail-out rather than anything that allocates. The empty
+	// check matters: on a server with no claims this is the difference
+	// between an iterator per block event and none at all.
 	public Claim findAt(final ResourceKey<Level> dimension, final int x, final int y, final int z) {
+		if (claims.isEmpty()) {
+			return null;
+		}
 		for (Claim claim : claims.values()) {
 			if (claim.dimension().equals(dimension) && x >= claim.minX() && x <= claim.maxX()
 					&& y >= claim.minY() && y <= claim.maxY() && z >= claim.minZ() && z <= claim.maxZ()) {
@@ -91,10 +105,32 @@ public class PisoClaims extends SavedData {
 
 	public int create(final UUID owner, final ResourceKey<Level> dimension,
 			final int minX, final int minY, final int minZ, final int maxX, final int maxY, final int maxZ) {
+		return create(owner, dimension, minX, minY, minZ, maxX, maxY, maxZ, 0L);
+	}
+
+	public int create(final UUID owner, final ResourceKey<Level> dimension,
+			final int minX, final int minY, final int minZ, final int maxX, final int maxY, final int maxZ,
+			final long rentPerPeriod) {
 		int id = nextId++;
-		claims.put(id, new Claim(id, owner, dimension, minX, minY, minZ, maxX, maxY, maxZ, new HashMap<>(), ChestAccess.OWNER_ONLY));
+		claims.put(id, new Claim(id, owner, dimension, minX, minY, minZ, maxX, maxY, maxZ,
+				new HashMap<>(), new HashMap<>(), ChestAccess.OWNER_ONLY, rentPerPeriod, 0L, 0));
 		setDirty();
 		return id;
+	}
+
+	// Replaces a claim's rent bookkeeping — accumulated online progress and
+	// the consecutive-missed-payment count. See RentCollector.
+	public void setRentState(final int claimId, final long rentProgressTicks, final int unpaidPeriods) {
+		Claim claim = claims.get(claimId);
+		if (claim == null) {
+			return;
+		}
+		claims.put(claimId, new Claim(
+				claim.id(), claim.owner(), claim.dimension(), claim.minX(), claim.minY(), claim.minZ(),
+				claim.maxX(), claim.maxY(), claim.maxZ(), claim.trusted(), claim.trustedNames(), claim.chestAccess(),
+				claim.rentPerPeriod(), rentProgressTicks, unpaidPeriods
+		));
+		setDirty();
 	}
 
 	// Used when a bound deed changes hands (e.g. sold on the market) — the
@@ -109,7 +145,8 @@ public class PisoClaims extends SavedData {
 		}
 		claims.put(claimId, new Claim(
 				claim.id(), newOwner, claim.dimension(), claim.minX(), claim.minY(), claim.minZ(),
-				claim.maxX(), claim.maxY(), claim.maxZ(), new HashMap<>(), claim.chestAccess()
+				claim.maxX(), claim.maxY(), claim.maxZ(), new HashMap<>(), new HashMap<>(), claim.chestAccess(),
+				claim.rentPerPeriod(), claim.rentProgressTicks(), 0
 		));
 		setDirty();
 	}
@@ -121,7 +158,8 @@ public class PisoClaims extends SavedData {
 		}
 		claims.put(claimId, new Claim(
 				claim.id(), claim.owner(), claim.dimension(), claim.minX(), claim.minY(), claim.minZ(),
-				claim.maxX(), claim.maxY(), claim.maxZ(), claim.trusted(), access
+				claim.maxX(), claim.maxY(), claim.maxZ(), claim.trusted(), claim.trustedNames(), access,
+				claim.rentPerPeriod(), claim.rentProgressTicks(), claim.unpaidPeriods()
 		));
 		setDirty();
 	}
@@ -133,20 +171,26 @@ public class PisoClaims extends SavedData {
 	}
 
 	// null trustLevel revokes trust entirely.
-	public void setTrust(final int claimId, final UUID player, final TrustLevel trustLevel) {
+	public void setTrust(final int claimId, final UUID player, final String playerName, final TrustLevel trustLevel) {
 		Claim claim = claims.get(claimId);
 		if (claim == null) {
 			return;
 		}
 		Map<UUID, TrustLevel> trusted = new HashMap<>(claim.trusted());
+		Map<UUID, String> names = new HashMap<>(claim.trustedNames());
 		if (trustLevel == null) {
 			trusted.remove(player);
+			names.remove(player);
 		} else {
 			trusted.put(player, trustLevel);
+			if (playerName != null) {
+				names.put(player, playerName);
+			}
 		}
 		claims.put(claimId, new Claim(
 				claim.id(), claim.owner(), claim.dimension(), claim.minX(), claim.minY(), claim.minZ(),
-				claim.maxX(), claim.maxY(), claim.maxZ(), trusted, claim.chestAccess()
+				claim.maxX(), claim.maxY(), claim.maxZ(), trusted, names, claim.chestAccess(),
+				claim.rentPerPeriod(), claim.rentProgressTicks(), claim.unpaidPeriods()
 		));
 		setDirty();
 	}

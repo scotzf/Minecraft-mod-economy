@@ -3,7 +3,9 @@
 	"package": "com.pisomarket.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
-		"PlayerDropMixin"
+		"PlayerDropMixin",
+		"ContainerDeedGuardMixin",
+		"ExplosionProtectionMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

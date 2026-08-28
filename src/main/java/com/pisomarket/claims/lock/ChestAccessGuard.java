@@ -27,9 +27,30 @@ public final class ChestAccessGuard {
 	private ChestAccessGuard() {
 	}
 
+	// Every container worth protecting, not just the plain chest. A trapped
+	// chest, barrel, shulker or hopper sitting in your claim was previously
+	// wide open to anyone — the policy only checked Blocks.CHEST.
+	//
+	// Double chests need no special handling: each half is its own block
+	// position, and whichever half is clicked is the position checked.
+	private static boolean isProtectedContainer(final net.minecraft.world.level.block.state.BlockState state) {
+		return state.is(Blocks.CHEST)
+				|| state.is(Blocks.TRAPPED_CHEST)
+				|| state.is(Blocks.BARREL)
+				|| state.is(Blocks.HOPPER)
+				|| state.is(Blocks.DISPENSER)
+				|| state.is(Blocks.DROPPER)
+				|| state.is(Blocks.FURNACE)
+				|| state.is(Blocks.BLAST_FURNACE)
+				|| state.is(Blocks.SMOKER)
+				|| state.is(Blocks.BREWING_STAND)
+				|| state.is(Blocks.SHULKER_BOX)
+				|| state.getBlock() instanceof net.minecraft.world.level.block.ShulkerBoxBlock;
+	}
+
 	public static void register() {
 		BlockEvents.USE_WITHOUT_ITEM.register((state, level, pos, player, hitResult) -> {
-			if (level.isClientSide() || !state.is(Blocks.CHEST) || !(player instanceof ServerPlayer serverPlayer)) {
+			if (level.isClientSide() || !isProtectedContainer(state) || !(player instanceof ServerPlayer serverPlayer)) {
 				return null;
 			}
 
