@@ -70,10 +70,10 @@ public final class ElementalWeapons {
 		return item;
 	}
 
-	// Molten — Ignite
+	// Molten — Ignite. Hearthflame (the Reach column) was cut from the
+	// final roster 2026-08-31 — not built, don't re-add without checking.
 	public static final Item MOLTENSWORD = sword("moltensword", Element.EMBER);
 	public static final Item MOLTENBLADE = heavy("moltenblade", Element.EMBER);
-	public static final Item HEARTHFLAME = heavy("hearthflame", Element.EMBER);
 
 	// Frost — Slowness
 	public static final Item FROSTBLADE = sword("frostblade", Element.FROST);
@@ -85,8 +85,8 @@ public final class ElementalWeapons {
 	public static final Item ABOMINABLEGREATSABER = heavy("abominablegreatsaber", Element.VENOM);
 	public static final Item ABOMINABLESCYTHE = sword("abominablescythe", Element.VENOM);
 
-	// Soul — Lifesteal
-	public static final Item SOULEDGE = sword("souledge", Element.LIFESTEAL);
+	// Soul — Lifesteal. Soul Edge (the Sword column) was cut from the
+	// final roster 2026-08-31 — not built, don't re-add without checking.
 	public static final Item SOUL_DEVOURER = heavy("soul_devourer", Element.LIFESTEAL);
 	public static final Item SOUL_COLLECTOR = sword("soul_collector", Element.LIFESTEAL);
 

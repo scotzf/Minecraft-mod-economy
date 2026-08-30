@@ -49,6 +49,7 @@ public class PisoMarket implements ModInitializer {
 		LockContent.register();
 		ChestAccessGuard.register();
 		com.pisomarket.combat.ElementalWeapons.register();
+		com.pisomarket.combat.CustomArmorContent.register();
 		PisoCreativeTabs.register();
 		LOGGER.info("Piso Market initialized");
 	}

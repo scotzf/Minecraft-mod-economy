@@ -19,6 +19,19 @@ give @s pisomarket:soul_collector
 give @s pisomarket:divine_justice
 give @s pisomarket:divineaxerhitta
 give @s pisomarket:divine_reaper
+# Custom armor — the toughness-boosted diamond/netherite/gold sets
+give @s pisomarket:custom_diamond_helmet
+give @s pisomarket:custom_diamond_chestplate
+give @s pisomarket:custom_diamond_leggings
+give @s pisomarket:custom_diamond_boots
+give @s pisomarket:custom_netherite_helmet
+give @s pisomarket:custom_netherite_chestplate
+give @s pisomarket:custom_netherite_leggings
+give @s pisomarket:custom_netherite_boots
+give @s pisomarket:custom_gold_helmet
+give @s pisomarket:custom_gold_chestplate
+give @s pisomarket:custom_gold_leggings
+give @s pisomarket:custom_gold_boots
 # Currency — enough poisonous potatoes to test the Shop block's Vault tab
 give @s poisonous_potato 64
 # The Shop block itself — deposit/withdraw only works through this (see

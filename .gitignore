@@ -47,3 +47,29 @@ replay_*.log
 src/main/resources/assets/pisomarket/models/item/divineaxerhitta.json
 src/main/resources/assets/pisomarket/items/divineaxerhitta.json
 src/main/resources/assets/pisomarket/textures/item/divine_axe_rhitta.png
+
+# Same situation, different source: CarroRateXMods armor retexture pack.
+# Zero license/credit file in the pack at all. Approved for private local
+# use only (this machine + one friend), explicitly not for the public
+# repo. CustomArmorContent.java still registers all twelve armor pieces
+# and points at these paths, so a fresh clone compiles and runs — the
+# armor just renders as the missing-texture placeholder without these
+# eighteen files existing locally again.
+src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid/custom_diamond.png
+src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid/custom_netherite.png
+src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid/custom_gold.png
+src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid_leggings/custom_diamond.png
+src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid_leggings/custom_netherite.png
+src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid_leggings/custom_gold.png
+src/main/resources/assets/pisomarket/textures/item/custom_diamond_helmet.png
+src/main/resources/assets/pisomarket/textures/item/custom_diamond_chestplate.png
+src/main/resources/assets/pisomarket/textures/item/custom_diamond_leggings.png
+src/main/resources/assets/pisomarket/textures/item/custom_diamond_boots.png
+src/main/resources/assets/pisomarket/textures/item/custom_netherite_helmet.png
+src/main/resources/assets/pisomarket/textures/item/custom_netherite_chestplate.png
+src/main/resources/assets/pisomarket/textures/item/custom_netherite_leggings.png
+src/main/resources/assets/pisomarket/textures/item/custom_netherite_boots.png
+src/main/resources/assets/pisomarket/textures/item/custom_gold_helmet.png
+src/main/resources/assets/pisomarket/textures/item/custom_gold_chestplate.png
+src/main/resources/assets/pisomarket/textures/item/custom_gold_leggings.png
+src/main/resources/assets/pisomarket/textures/item/custom_gold_boots.png

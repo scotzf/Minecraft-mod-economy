@@ -1,0 +1,14 @@
+{
+	"layers": {
+		"humanoid": [
+			{
+				"texture": "pisomarket:custom_netherite"
+			}
+		],
+		"humanoid_leggings": [
+			{
+				"texture": "pisomarket:custom_netherite"
+			}
+		]
+	}
+}
