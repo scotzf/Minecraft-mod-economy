@@ -211,10 +211,41 @@ is what most trading uses.
 
 **Faucet — poisonous potato drops while harvesting.**
 
-**Rate: 2.5% per mature potato harvested.** Decided, final
-(`HarvestFaucet.java`). Drops go straight into the harvester's vault balance,
-not the ground — avoids losing the payout to lava/despawn immediately after
-earning it.
+**Payout is a physical drop, not a vault deposit.** Decided, reversing the
+earlier design. The old behaviour — `vault.deposit()` plus a "A poisonous
+potato slipped into your vault" chat line on every hit — is **removed**. A
+successful harvest now drops the poisonous potato on the ground like any
+other crop yield.
+
+The earlier reasoning (a vault deposit can't be lost to lava or a despawn)
+was true, but it made the money invisible and contradicted the core rule that
+**the currency is a physical item**. Losing a payout to lava is the passive
+sink the currency design already accepts.
+
+**Multiplier rolls replace the flat payout.** A harvest can pay out 2x, 3x or
+4x:
+
+| Roll | Multiplier |
+|---|---|
+| 1% | 2x |
+| 0.5% | 3x |
+| 0.1% | 4x |
+
+**UNRESOLVED — how these compose with the base drop chance.** The two
+readings differ by roughly 5x in money supply, so this must be settled before
+it is built:
+
+- **A — multiplier applies to a successful base drop.** Base 1% to drop at
+  all, then the multiplier rolls on that drop. A double is then
+  0.01 x 0.01 = **1 in 10,000 harvests**, which is so rare no player will
+  ever notice it.
+- **B — the multiplier rolls are independent per harvest.** Expected payout
+  becomes 0.049 per harvest against today's 0.01 — a **4.9x increase in the
+  money supply**, which would need every shop price rechecked.
+
+**Still player-break only.** Confirmed, unchanged: the hook stays on
+`PlayerBlockBreakEvents`, so piston and villager farms mint nothing. This is
+the single load-bearing reason it is safe to have no daily cap.
 
 **No daily cap — deliberately deferred, not forgotten.** The design below
 (cap as the real bound on money supply, rate only controlling feel) is still
@@ -299,36 +330,52 @@ applied lazily in `PisoShopStock`). Cheap tools 1 day, diamond gear 7,
 enchanted 7-14, elytra 300. Note 1 in-game day = 20 real minutes, so 300
 days is roughly 100 real hours — deliberately once-per-server.
 
-## Shop UI
+## Interface: commands only
 
-A craftable block, not a command-only interface — placed in the world,
-right-click to open a chest-style menu (crafted from 8 gold ingots around 1 obsidian) (`PisoShopMenu`, a custom
-`AbstractContainerMenu`). Ended up needing a small custom client `Screen`
-class after all (`PisoShopScreen`) — the build order's original hope of
-avoiding one didn't quite hold, since vanilla's own generic-container screen
-turned out to be hardcoded to its own `ChestMenu` type and couldn't be
-reused directly. The screen itself is tiny (just copies vanilla's
-background-drawing code); the real client/server-must-agree risk the build
-order was worried about never materialized.
+**Decided, reversing the earlier design: there is no Shop block.** Every
+front end in this mod is a Brigadier command. The block, its menu, its custom
+client screen and the whole named-book navigation grid are **removed**.
 
-Slots hold **named books as navigation buttons**, not real readable books,
-one shared menu instance repopulating the same grid per screen:
+The earlier reasoning — that a physical block makes the shop "a real place
+players have to go" rather than decoration — is recorded here because it was
+genuine, but it lost to the cost of maintaining a client `Screen`, a custom
+`AbstractContainerMenu`, 16 UI button items with their own textures, models
+and lang keys, and the class of bugs that only appear because `clicked()`
+runs on the client too. Commands cost none of that and are the only thing
+testable headlessly (see "Build and test").
 
-- **Vault** — a real slot to drop potatoes in for deposit, +/- buttons to
-  dial in a withdraw amount, same code paths as `/deposit`/`/withdraw`
-- **Buy** — a real clickable grid of live market listings; click one to buy
-  (same code path as `/market buy`)
-- **Sell** — a real slot to drop the item in, plus +/- buttons to dial in a
-  price (no text input needed), then a confirm button (same code path as
-  `/market list`)
-- **BlackMarket** — a real clickable grid: the Tier 3/4 catalog, Land Deeds,
-  and Locks together (see Territory claims) — sells only, never buys
+**This deletion is safe because every view already had a command twin.** The
+build order's commands-first rule is what makes the block removable at all:
 
-Every button/grid click ultimately calls the same shared methods the
-text commands use (`MarketCommands.tryBuy`, `ShopCommands.tryBuy`, etc.) —
-the commands in "In-game command surface" below and the block's menu are two
-front ends to the same logic, not two separate implementations to keep in
-sync by hand.
+| Removed view | Surviving command |
+|---|---|
+| Buy (market listings grid) | `/market browse`, `/market buy <id>` |
+| Sell (slot + price dial) | `/market list <price>` |
+| BlackMarket (Tier 3/4, deeds) | `/shop browse <tier>`, `/deed browse`, `/deed buy` |
+| Leaderboard | `/top` |
+| Vault (deposit slot + withdraw dial) | `/balance`, `/deposit`, `/withdraw` |
+
+**`/deposit` and `/withdraw` are restored.** They were deliberately left
+unregistered so that moving money between hand and vault could only happen at
+the Shop block. With no block, that reasoning is void and they become the
+only way to reach the vault at all. Their logic already exists — it lives in
+`PisoShopMenu.depositFromInventory` and the withdraw branch of
+`clickedVault`, which were always a separate implementation that never called
+a command. That logic moves into `PisoCommands`; the menu is deleted.
+
+**What gets deleted with the block:**
+
+- `PisoShopBlock`, `PisoShopContainer`, `PisoShopMenu`, `PisoShopContent`,
+  `PisoUiItems`, and the client's `PisoShopScreen`
+- The crafting recipe (`data/pisomarket/recipe/shop.json`), the blockstate,
+  the block and item models, and `textures/block/shop.png`
+- All 16 `ui_*` textures, models, item definitions and lang keys
+- The Shop entry in `PisoCreativeTabs`
+
+**What must NOT be deleted:** `RestrictedChestMenu` and
+`RestrictedChestScreen` belong to lockable chests, not the shop. Locked
+chests still need a real screen — that one is not optional, because it
+replaces the vanilla chest UI.
 
 ## Territory claims
 
@@ -424,16 +471,124 @@ not from yourself:
 This is separate from build (place/destroy) trust — a player can be trusted
 to build on your land without being able to touch your chests.
 
+## Death and revive
+
+Dying starts a **120-second respawn cooldown**. The player may wait it out for
+free, or **pay to respawn immediately**.
+
+- **Price: 3 Piso per second of cooldown remaining**, drawn from the **vault**
+  (never from cash in hand — the corpse's inventory is exactly what the player
+  is trying to recover, and rent/escrow already set the precedent that
+  automatic charges come from the vault).
+- A full 120-second skip therefore costs **360**. That is deliberately more
+  than a Small land deed (200) or a diamond pickaxe (210) — dying should hurt,
+  and this is the sink that makes it hurt in currency rather than in lost time
+  alone.
+- Partial skips are allowed: waiting 90 seconds and then paying costs 30x3 =
+  90. The price falls as the timer runs down, so the choice stays live for the
+  whole two minutes instead of being a single yes/no at the moment of death.
+
+**Repeat deaths scale the price quadratically.** The multiplier is `n²` where
+`n` is the death count in the current window:
+
+| Death | Rate | Full 120s skip |
+|---|---|---|
+| 1st | 3/s | 360 |
+| 2nd | 12/s | 1,440 |
+| 3rd | 27/s | 3,240 |
+
+- **Capped at the 3rd death.** A 4th and any later death in the same window
+  costs the same as the 3rd — the price stops climbing, it does not keep
+  growing.
+- **The window is a rolling hour from the first death**, not a clock hour. An
+  hour after death #1, the count returns to zero.
+
+**Why quadratic and not repeated squaring.** "Squared every time" read
+literally means squaring the *rate* each death — 3, 9, 81, 6561/s, which puts
+a 4th revive at 787,320, larger than the entire money supply will ever be.
+Quadratic scaling delivers the same intent (repeat dying gets punishing fast)
+without detonating. **Confirm this reading before it is built.**
+
+**Implementation risk, flagged early:** vanilla respawns the player as soon as
+they click the button. Holding them on the death screen for 120 seconds means
+intercepting the respawn path, not just delaying a teleport. Expect this to be
+the fiddly part.
+
+## Waypoints
+
+Fast travel between spread-out farms, as a **physical two-block structure**
+rather than a command-only convenience.
+
+- **Two blocks tall, placed from a single item** — lower and upper half, built
+  like a vanilla door. Breaking either half breaks both and returns the one
+  item.
+- **Interacting binds it**, exactly the way a bed sets spawn. The last
+  waypoint a player interacted with is their active destination; binding to a
+  new one silently replaces the old.
+- **Public by default.** Anyone who can physically reach a waypoint can bind
+  to it, including inside someone else's claim. Waypoints are infrastructure —
+  the intent is that players build travel hubs others use, and that placement
+  location is therefore a real decision. This is deliberately *not* gated on
+  claim trust.
+
+**`/warp` returns the player to their bound waypoint.**
+
+- **5-minute cooldown** between uses.
+- **Blocked if the player took damage in the last 5 seconds.** This is the
+  combat lock — without it `/warp` is a free escape button that trivialises
+  every fight and every raid. Five seconds is short enough that it never
+  annoys someone travelling peacefully.
+- **Free.** No Piso cost. Farming plots are spread out by nature and travel
+  should not be means-tested; the cooldown alone is the limit.
+
+**Still to decide on waypoints:**
+
+- **How players get one — DECIDED: bought from the BlackMarket**, via
+  `/shop`. Not craftable. This makes waypoints a money sink, which the economy
+  is short of, and means a player must farm before they can fast-travel.
+  Price not yet set.
+- **Cross-dimension travel** — assumed **not allowed** for now (a Nether hub
+  bound from the Overworld is a distance exploit), but this was never
+  explicitly decided.
+- **Destroyed bound waypoint** — assumed `/warp` fails with a clear message
+  and the player is unbound, rather than teleporting into empty air.
+
+## Custom items — deferred, not dropped
+
+Custom gear (a sword, a bow, a cape with real art) is **wanted but parked
+until the systems above work**. Three reasons it is last, all of them real:
+
+- **The art cannot be verified in an agent session.** See "What cannot be
+  verified headlessly" — textures and models need a human looking at
+  `runClient`, so every iteration costs a round trip.
+- **A cape is the hardest thing on the list.** Real Minecraft capes are a
+  Mojang account feature a mod cannot grant; a mod cape needs a custom client
+  render layer, which is the "client and server must agree exactly" work the
+  build order deliberately sequenced last.
+- **A custom sword or bow collides with an existing rule.** System-sold gear
+  must stay strictly worse than player-enchanted gear (the reason Unbreaking
+  and Mending are banned from the shop). Special weapons should be
+  **sidegrades** — unusual effects, not higher numbers — or they redirect the
+  reward for playing the economy away from other players and back to the shop.
+  A cosmetic cape has no such problem: nobody can craft one and it competes
+  with nothing.
+
 ## Data model
 
 ```java
 Map<UUID, Long>          vault;         // vault balance only — NOT total wealth
-Map<UUID, Integer>       dailyDropped;  // coins dropped today, enforces the cap
-Map<UUID, DailyProgress> progress;      // order board state, reset day number
 Map<UUID, Claim>         claims;        // keyed by claim id (not owner — one owner can hold several)
+Map<UUID, DeathState>    deaths;        // revive cooldown + rolling-hour death count
+Map<UUID, BlockPos>      boundWaypoint; // last waypoint interacted with; the /warp destination
+Map<UUID, Long>          lastWarpTick;  // for the 5-minute /warp cooldown
 record ShopEntry(Item item, int qty, long price, int remaining) {}
 record ClaimBox(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {}
+record DeathState(long respawnReadyTick, int deathsThisWindow, long windowStartTick) {}
 // Claim: owner, ClaimBox, paid-through day, Map<UUID, TrustLevel> per-player place/destroy trust
+
+// NOT stored, deliberately: dailyDropped (no daily cap exists — see "Economy:
+// one faucet") and any order-board / contract state (the rotating crop-order
+// idea was considered and DROPPED; the faucet stays the only money source).
 ```
 
 Note what is **not** stored: cash in hand. Items in inventories and chests are
@@ -467,7 +622,7 @@ later and are built on top of these.
 - `/pay <player> <amount>` — vault-to-vault transfer; recipient may be offline
 - `/deposit [amount]` — inventory coins → vault
 - `/withdraw <amount>` — vault → inventory coins, needs inventory space
-- `/daily` — progress against today's drop cap
+- `/leaderboard` — the wealth leaderboard snapshot (renamed from `/top`)
 
 **Player — market** (asynchronous; seller and buyer need not be online together)
 - `/market list <price>` — list the held stack, item moves into world storage
@@ -479,6 +634,12 @@ later and are built on top of these.
 **Player — system shop** (sells only, never buys)
 - `/shop browse [tier]` — current stock, tiers rotate weekly
 - `/shop buy <id> [qty]` — purchase, deducts balance
+
+**Player — travel and death**
+- `/warp` — return to the last waypoint interacted with; 5-minute cooldown,
+  refused if damaged in the last 5 seconds
+- Respawning early is a prompt on the death screen, not a command — see
+  "Death and revive"
 
 **Player — territory**
 - Land Deed (bought from BlackMarket) — use it on unclaimed ground to
@@ -498,6 +659,34 @@ later and are built on top of these.
 - `/market remove <id>` — force-remove a listing
 - `/claim force-unclaim` — override a claim
 
+### Chat formatting
+
+Every command reply follows one colour system, so a player can scan chat and
+know what they are looking at without reading. Today only 18 of 125
+`Component.literal` calls carry any style at all — nearly all of them in the
+leaderboard — so this is a gap, not a preference.
+
+**There is no font size in Minecraft chat.** The only levers are the 16
+named `ChatFormatting` colours plus bold, italic, underline and
+strikethrough. Real size changes exist only in titles/subtitles and the
+action bar, which are separate systems and not used for command replies.
+
+| Role | Style | Applies to |
+|---|---|---|
+| Prefix | `GOLD` + bold, `[Piso]` | Every mod message, to separate it from vanilla |
+| Success | `GREEN` | "Deposited", "Bought", "Listed" |
+| Failure | `RED` | "Insufficient balance", "No inventory space" |
+| Money | `YELLOW` + bold | Every currency amount, without exception |
+| Names | `AQUA` | Player names, item names, claim ids |
+| Body | `WHITE` | Ordinary sentence text |
+| Hint | `DARK_GRAY` + italic | Footnotes, usage tips, "updates every ..." |
+| Button | `AQUA` + underline | Clickable `[Confirm]` / `[Trust]` links |
+| Warning | `YELLOW` | Rent unpaid, protection lapsing |
+
+The rule that makes it feel deliberate: **money is always yellow-bold and
+names are always aqua.** A player scanning a wall of chat picks out amounts
+instantly.
+
 ### Rules for all commands
 
 - Amounts are `long`, whole units, validated positive **before** touching
@@ -511,9 +700,23 @@ later and are built on top of these.
 
 
 - Currency display name
+- **The faucet rate contradicts itself.** This doc says 2.5% ("decided,
+  final") and derives all pricing from "1 Piso = 40 mature potatoes".
+  `HarvestFaucet.DROP_CHANCE` is actually **0.01** — 1%, so the real rate is
+  **100 potatoes per Piso** and every shop price is effectively 2.5x more
+  expensive than the reasoning above intends. The revive costs in "Death and
+  revive" are quoted against the real 1%. Decide which number is right and
+  make the other match.
+- **The revive squaring reading** — quadratic `n²` is written up; confirm that
+  is what was meant (see "Death and revive")
 - Exact rent rates, price multiplier, deed sizes/prices — tune after the
   systems run
 - Daily drop cap — deferred (see "Economy: one faucet"), not abandoned
+- **The Lock item does not exist yet.** "Lockable chests" describes it as a
+  BlackMarket purchase, and `ChestAccess`, `RestrictedChestMenu` and
+  `ChestAccessGuard` are all built — but no Lock item is registered, it is in
+  no shop catalog, and it has no texture. The feature is unreachable in game.
+- **Waypoint price** — not set (acquisition is decided: BlackMarket)
 - Whether listings ever expire and return items to the seller
 - Whether rent is strictly auto-renew, or a manual `/claim pay` also exists
 - Whether `/pay` should exist at all, given players can hand over coins directly

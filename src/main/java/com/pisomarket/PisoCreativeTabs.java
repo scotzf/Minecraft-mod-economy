@@ -32,6 +32,12 @@ public final class PisoCreativeTabs {
 			output.accept(new ItemStack(com.pisomarket.economy.harvest.HarvestPotionItem.LUCK), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
 		});
 
+		// Sample elemental weapon, in the combat tab so it can be grabbed
+		// for testing without the shop.
+		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.COMBAT).register(output ->
+				output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.FROSTBLADE), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS)
+		);
+
 		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(output -> {
 			// One entry per deed size, each already carrying its
 			// width/length/height so it's usable straight out of creative.

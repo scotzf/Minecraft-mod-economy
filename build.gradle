@@ -50,6 +50,13 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
+	// Let Gradle locate a JDK 25 on whatever machine this is, instead of a
+	// hardcoded org.gradle.java.home in gradle.properties (see the note
+	// there — that path was wrong on two machines in a row).
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+
 	sourceCompatibility = JavaVersion.VERSION_25
 	targetCompatibility = JavaVersion.VERSION_25
 }
