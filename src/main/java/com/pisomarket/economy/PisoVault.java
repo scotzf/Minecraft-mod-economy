@@ -87,4 +87,28 @@ public class PisoVault extends SavedData {
 		deposit(to, amount);
 		return true;
 	}
+
+	// Admin-only mint/burn to an exact value — unlike deposit/withdraw this
+	// is not conserving (it can create or destroy money), which is fine
+	// here because /eco set is explicitly an admin override, not a player
+	// transaction. Negative amounts are rejected the same as everywhere
+	// else money touches storage (CLAUDE.md's "Rules for all commands").
+	public void setBalance(final UUID player, final long amount) {
+		if (amount < 0) {
+			throw new IllegalArgumentException("Balance cannot be set negative");
+		}
+		balances.put(player, amount);
+		setDirty();
+	}
+
+	// Sum of every vault balance. NOT total money in circulation — cash
+	// sitting in inventories and chests isn't tracked anywhere (see
+	// CLAUDE.md's "Data model" note). This is the floor, not the total.
+	public long totalVaultBalance() {
+		long total = 0;
+		for (long balance : balances.values()) {
+			total += balance;
+		}
+		return total;
+	}
 }

@@ -44,6 +44,7 @@ Check here before writing code that touches these:
 | `PersistentState` | `SavedData` (base class) + `SavedDataType<T>` (id/codec/factory record) |
 | `DimensionDataStorage` | `SavedDataStorage`, via `MinecraftServer.getDataStorage()` — server-wide, not per-dimension |
 | `ServerCommandSource` | `CommandSourceStack` |
+| `source.hasPermission(2)` (int op-level check) | `.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))` — 26.2 replaced the whole int op-level system with a `PermissionCheck`/`PermissionSet` API. `CommandSourceStack.hasPermission(int)` no longer exists at all. The four levels are `LEVEL_MODERATORS` / `LEVEL_GAMEMASTERS` / `LEVEL_ADMINS` / `LEVEL_OWNERS`, mapping onto the old op levels 1-4 in that order; `LEVEL_ALL` is the old level 0. Confirmed by decompiling — see `EcoCommands.java` for a working example. |
 | `CommandManager.literal` / `.argument` | `Commands.literal` / `.argument` |
 | `HudRenderCallback` (old immediate-mode HUD hook) | `HudElementRegistry` + `HudElement.extractRenderState(GuiGraphicsExtractor, DeltaTracker)` — a deferred render-state system |
 | `Level.getDayTime()` | `getOverworldClockTime()` (day/night clock, resettable by `/time set`) vs `getGameTime()` (monotonic total ticks — use this for timers) |
@@ -128,6 +129,61 @@ a bug.
 graphical screen, and anything requiring a real player entity in the world. For
 those, report what changed and ask for a human check in `runClient` rather than
 claiming it works.
+
+### Testing everything in a real game, not the dev environment
+
+`runClient` needs a human at the screen anyway, and it's a throwaway dev
+world — there's no reason to prefer it over the real Minecraft install this
+project is actually played on. On this machine that's **TLauncher**
+(`%APPDATA%\.minecraft`, not the dev environment's `run/` folder), which
+already has fabric-api, modmenu, and pisomarket in its `mods/` folder and a
+"Fabric 26.2" profile. After any build, the jar needs copying there by hand
+(no automation for this — it's a manual step every session):
+
+```bash
+cp build/libs/pisomarket-1.0.0.jar "$APPDATA/.minecraft/mods/pisomarket-1.0.0.jar"
+```
+
+**Any world with "Allow Cheats: On" set at creation** gives the singleplayer
+owner full command permission automatically — no `/op` needed. That's
+required for `/eco`, which is gated at `LEVEL_GAMEMASTERS`.
+
+**`/function pisomarket:testkit`** gives one command that sets up everything
+needed to test the whole mod at once, instead of typing fifteen `/give`
+lines and grinding out a vault balance by hand: all 15 elemental weapons,
+64 poisonous potatoes (to test the Shop block's Vault tab — see "Interface:
+the Shop block is the real thing, still"), a Shop block, the three harvest
+potions, and `/eco set` to 500,000 vault balance (enough to clear every
+BlackMarket tier and system shop item without a second thought). Defined in
+`data/pisomarket/function/testkit.mcfunction` — add to it as new testable
+things get built. Needs `LEVEL_GAMEMASTERS` itself, since it calls `/eco`
+internally.
+
+A rough per-system checklist, once the kit is in hand:
+
+- **Weapons** — equip each, check the model in hand/inventory/on the
+  ground, hit a mob, confirm the right effect (ignite / slow / poison /
+  heal-on-hit / bonus damage on undead only for Smite)
+- **Vault** — place the Shop block, deposit the 64 potatoes, `/balance`,
+  withdraw some back, `/pay` another online player
+- **Market** — `/market list <price>` an item, `/market browse`,
+  `/market buy <id>` from a second account, `/market mine`,
+  `/market cancel <id>`
+- **System shop** — `/shop browse [tier]`, `/shop buy <id>` across a few
+  tiers, confirm Unbreaking/Mending never appear on enchanted stock
+- **Claims** — buy a Land Deed (`/deed browse`, `/deed buy <id>`), activate
+  it on open ground, open the deed book to trust/untrust a second player,
+  confirm the boundary particles render (green for trusted, red for
+  someone else's claim), test the chest-access levels from the deed book
+- **Rent** — `/claims` to see paid-through day; forcing an actual missed
+  payment needs waiting out in-game days, so this one is slow to test for
+  real
+- **Leaderboard** — `/top`
+- **TNT** — confirm it still discards on the first tick with no explosion,
+  and that the crafting recipe requires barrier blocks instead of vanilla's
+
+Testing this on the real TLauncher install, not the dev environment, means
+whatever's found here is what players will actually see.
 
 ### Reading failures
 
@@ -338,24 +394,49 @@ applied lazily in `PisoShopStock`). Cheap tools 1 day, diamond gear 7,
 enchanted 7-14, elytra 300. Note 1 in-game day = 20 real minutes, so 300
 days is roughly 100 real hours — deliberately once-per-server.
 
-## Interface: commands only
+## Interface: the Shop block is the real thing, still
 
-**Decided, reversing the earlier design: there is no Shop block.** Every
-front end in this mod is a Brigadier command. The block, its menu, its custom
-client screen and the whole named-book navigation grid are **removed**.
+**Correction, 2026-08-30: this section used to claim the Shop block was
+deleted in favour of commands-only. That never actually happened — checked
+against the code, not assumed.** `PisoShopBlock`, `PisoShopContainer`,
+`PisoShopMenu`, `PisoShopContent`, `PisoUiItems`, the client's
+`PisoShopScreen`, the crafting recipe (`data/pisomarket/recipe/shop.json`),
+all 16 `ui_*` textures/models/lang keys, and the Shop entry in
+`PisoCreativeTabs` are all still present, still registered, and still the
+live way to reach the vault. `PisoCommands.java` says so directly, in its
+own comment:
 
-The earlier reasoning — that a physical block makes the shop "a real place
-players have to go" rather than decoration — is recorded here because it was
-genuine, but it lost to the cost of maintaining a client `Screen`, a custom
-`AbstractContainerMenu`, 16 UI button items with their own textures, models
-and lang keys, and the class of bugs that only appear because `clicked()`
-runs on the client too. Commands cost none of that and are the only thing
-testable headlessly (see "Build and test").
+> `/deposit` and `/withdraw` are deliberately NOT registered. Moving money
+> between hand and vault must happen at a Shop block, so the block is a
+> real place players have to go rather than decoration.
 
-**This deletion is safe because every view already had a command twin.** The
-build order's commands-first rule is what makes the block removable at all:
+**Practical consequence for testing: `/deposit` and `/withdraw` do not
+exist as commands.** To move money between hand and vault, craft a Shop
+block (8 gold ingots around 1 obsidian), place it, right-click it, and use
+its Vault tab. `/balance` and `/pay` do work as commands — only the
+deposit/withdraw path needs the block.
 
-| Removed view | Surviving command |
+The plan below is preserved for whoever picks this decision back up — it
+was drafted in an earlier session but the actual deletion work was never
+done, and the doc was never corrected to match until now. Do not assume
+it reflects the codebase; verify against the classes listed before acting
+on it.
+
+<details>
+<summary>Un-executed plan: delete the Shop block in favour of commands</summary>
+
+The reasoning was genuine — a physical block makes the shop "a real place
+players have to go" rather than decoration, but that lost to the cost of
+maintaining a client `Screen`, a custom `AbstractContainerMenu`, 16 UI
+button items with their own textures, models and lang keys, and the class
+of bugs that only appear because `clicked()` runs on the client too.
+Commands cost none of that and are the only thing testable headlessly (see
+"Build and test").
+
+The deletion was believed safe because every view already had a command
+twin:
+
+| View | Command twin |
 |---|---|
 | Buy (market listings grid) | `/market browse`, `/market buy <id>` |
 | Sell (slot + price dial) | `/market list <price>` |
@@ -363,22 +444,15 @@ build order's commands-first rule is what makes the block removable at all:
 | Leaderboard | `/top` |
 | Vault (deposit slot + withdraw dial) | `/balance`, `/deposit`, `/withdraw` |
 
-**`/deposit` and `/withdraw` are restored.** They were deliberately left
-unregistered so that moving money between hand and vault could only happen at
-the Shop block. With no block, that reasoning is void and they become the
-only way to reach the vault at all. Their logic already exists — it lives in
+The plan was to register `/deposit` and `/withdraw` (moving
 `PisoShopMenu.depositFromInventory` and the withdraw branch of
-`clickedVault`, which were always a separate implementation that never called
-a command. That logic moves into `PisoCommands`; the menu is deleted.
+`clickedVault` into `PisoCommands`) and then delete `PisoShopBlock`,
+`PisoShopContainer`, `PisoShopMenu`, `PisoShopContent`, `PisoUiItems`, the
+client's `PisoShopScreen`, the crafting recipe, blockstate, block/item
+models, `textures/block/shop.png`, all 16 `ui_*` assets, and the Shop entry
+in `PisoCreativeTabs`. None of that happened.
 
-**What gets deleted with the block:**
-
-- `PisoShopBlock`, `PisoShopContainer`, `PisoShopMenu`, `PisoShopContent`,
-  `PisoUiItems`, and the client's `PisoShopScreen`
-- The crafting recipe (`data/pisomarket/recipe/shop.json`), the blockstate,
-  the block and item models, and `textures/block/shop.png`
-- All 16 `ui_*` textures, models, item definitions and lang keys
-- The Shop entry in `PisoCreativeTabs`
+</details>
 
 **What must NOT be deleted:** `RestrictedChestMenu` and
 `RestrictedChestScreen` belong to lockable chests, not the shop. Locked
@@ -794,12 +868,21 @@ later and are built on top of these.
   activated deed book)
 
 **Admin** (permission level 2)
-- `/eco give <player> <amount>` — mint money; log every use
+- `/eco give <player> <amount>` — mint money; logged every use
+  (`EcoCommands.java`). **Implemented 2026-08-30** — this whole Admin section
+  was documented from early in the project but only `/eco` actually exists;
+  it was built because there was otherwise no way to fund a vault balance
+  for testing except depositing real potatoes at the Shop block. Takes
+  `EntityArgument.player()`, not `GameProfileArgument` like `/pay` — that
+  makes `@s` work inside `pisomarket:testkit` (see "Testing everything in
+  Minecraft" below) but means, unlike `/pay`, it can't target an offline
+  player.
 - `/eco take <player> <amount>`
 - `/eco set <player> <amount>`
-- `/eco total` — total money in circulation; the number to watch for inflation
-- `/market remove <id>` — force-remove a listing
-- `/claim force-unclaim` — override a claim
+- `/eco total` — sum of vault balances only, logged as such; NOT total money
+  in circulation, since cash in inventories/chests isn't tracked anywhere
+- `/market remove <id>` — **not implemented.** Documented, never built.
+- `/claim force-unclaim` — **not implemented.** Documented, never built.
 
 ### Chat formatting
 

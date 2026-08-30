@@ -11,6 +11,7 @@ import com.pisomarket.claims.DeedCommands;
 import com.pisomarket.claims.TerritoryVisualizer;
 import com.pisomarket.claims.lock.ChestAccessGuard;
 import com.pisomarket.claims.lock.LockContent;
+import com.pisomarket.economy.EcoCommands;
 import com.pisomarket.economy.PisoCommands;
 import com.pisomarket.economy.VaultSync;
 import com.pisomarket.economy.harvest.HarvestFaucet;
@@ -28,6 +29,7 @@ public class PisoMarket implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		PisoCommands.register();
+		EcoCommands.register();
 		VaultSync.register();
 		com.pisomarket.economy.LeaderboardCommands.register();
 		com.pisomarket.economy.LeaderboardTracker.register();
