@@ -991,22 +991,47 @@ date, or delete this whole section, once execution catches up.
 
 ### 1. Currency
 
-**Custom currency item, dropped by multiple crops at different chances.**
+**Item: the Sunstone Shard.** A hand-drawn-pixel-art amber crystal shard,
+picked from a 3-concept sheet over a fang talisman and a rune shard.
 Replaces the poisonous-potato-as-currency design entirely — that design's
 core problem (every poisonous potato already in every world counts as
 pre-existing money) goes away once currency is a new item nothing else
-produces. Needs: one new registered item + a simple icon (currency icons
-are conventionally plain — a coin/token doesn't hit the "too basic" wall
-that killed hand-drawn *weapon* sprites), and the faucet reworked to hook
-every crop's harvest event, not just potato.
+produces. Needs: the actual 16×16 texture (concept sheet was a rough
+silhouette/palette proposal, not the final asset), item registration, and
+the faucet reworked to hook every crop's harvest event, not just potato
+(`HarvestFaucet.java` currently ONLY checks `Blocks.POTATOES` — wheat,
+carrot, beetroot, nether wart all need their own hook, this is real
+unbuilt work, not a config change).
 
-**Still open — do not build until settled:**
-- Which crops, and their individual drop chances (wheat, potato, carrot,
-  beetroot, at minimum — melon/pumpkin/nether wart/sweet berries/cocoa
-  undecided)
+**Drop chances, locked:**
+
+| Crop | Chance | Notes |
+|---|---|---|
+| Wheat | 2.5% | |
+| Potato | 2.5% | |
+| Carrot | 2.5% | |
+| Beetroot | 5% | |
+| Nether Wart | 10% | Nether-only access is its own barrier already, priced in |
+
+Melon/pumpkin/sugar cane/cocoa/sweet berries/glow berries are explicitly
+**not** in this list yet — they're the renewable crops (harvest without
+replanting, see the growth-mechanics table this session worked out) and
+were flagged as needing either a lower chance or a hard cap so they don't
+dominate the faucet the way an unbounded automated farm would. Still open.
+
+**Pricing baseline, established this session:** a 9×9 (81-crop) carrot
+plot with no buffs earns roughly 2 Shards per full harvest cycle
+(81 × 2.5%), so **20 cycles ≈ 40 Shards** — real time per cycle is a rough
+40-60 minute estimate (random-tick-driven growth, genuinely fuzzy, worth
+measuring for real once this is built rather than trusting the theory).
+**The shop's price floor is 20 Shards** for the cheapest item — see §3 for
+how that plays out against the actual Tier 1 numbers.
+
+**Still open:**
 - Whether farm size still matters the way it did for the old single-potato
   faucet, and whether a per-crop or overall cap is needed now that more
-  crops feed supply (more sources than the old design ever priced for)
+  crops feed supply (more sources than the old design ever priced for) —
+  this is where the renewable-crop question above lives
 - Whether the Luck stat from the new level system (see §9) affects drop
   chance — proposed as a stat/faucet synergy, not confirmed
 
@@ -1039,16 +1064,65 @@ entirely. New tiers:
 |---|---|
 | 1 | Tools — diamond only |
 | 2 | Gear/armor — diamond only, single-enchant as before (Unbreaking/Mending still banned, still two levels below max) |
-| 3 | Rare items — elytra, farming potions, an XP potion, **and Land Decks are sold here too** (folds `/deed buy` into the same catalog instead of being its own separate BlackMarket flow) |
+| 3 | Rare items — see table below. **Land Deeds sell here too**, once built (folds `/deed buy` into the same catalog instead of a separate BlackMarket flow — deliberately not removing the current `/deed browse`/`/deed buy` commands until this replacement actually exists, so deeds don't go unbuyable in the gap; `/deed confirm`/`/deed cancel` are a different thing — activating an already-owned deed — and aren't touched either way) |
 | 4 | **New** — the 15 custom elemental weapons become purchasable here. They have no price yet; today they're `/give`/creative-only. |
 
-Dropping the material ladder means the `price = material unit value ×
-recipe unit count` formula (System shop catalog, above) no longer applies —
-it only made sense spanning five materials. **Open: the flat per-tool-type
-diamond price isn't set.** Proposed default until told otherwise: keep the
-diamond numbers the old formula already produced (diamond pickaxe 210,
-etc.) as the new flat prices, so nothing needs re-balancing on day one —
-confirm or override.
+**Tier 1 pricing, locked: 10 Shards per diamond in the vanilla recipe.**
+Confirmed against real vanilla recipe diamond counts (hoe/sword both use
+2, pickaxe/axe both use 3), replacing the old material-ladder formula
+entirely — no more `price = material unit value × recipe unit count`
+spanning five materials, just this one flat rate:
+
+| Item | Diamonds | Price |
+|---|---|---|
+| Shovel | 1 | 10 |
+| Sword | 2 | 20 |
+| Hoe | 2 | 20 |
+| Pickaxe | 3 | 30 |
+| Axe | 3 | 30 |
+| Boots | 4 | 40 |
+| Helmet | 5 | 50 |
+| Leggings | 7 | 70 |
+| Chestplate | 8 | 80 |
+
+Full 5-tool kit: 110. Full armor set: 240. Note the shovel (10) sits below
+the §1 price floor (20) — never resolved which one bends; ask before
+building if it still matters, or let the shovel be the one exception.
+
+**Tier 2 pricing:** the old 60%-per-enchant-level markup
+(`ENCHANT_PREMIUM_PER_LEVEL` in `ShopCatalog.java`) was proposed to carry
+over unchanged onto the new Tier 1 base prices — **never explicitly
+reconfirmed**, flag before building.
+
+**Tier 3 pricing, locked:**
+
+| Item | Price | Notes |
+|---|---|---|
+| Totem of Undying | 45 | |
+| Shulker Box | 100 | |
+| Netherite Ingot | 50 each | Raw material only — lets a player netherite-upgrade their OWN diamond gear at a smithing table; the shop still never sells finished netherite tools/armor |
+| Elytra | 120 | |
+| Harvest Potion I | 30 | Flat price, NOT the old "half of one minute's yield" formula — see below |
+| Harvest Potion II | 40 | Same |
+| Luck Potion | 30 | Same |
+| XP potion | **deferred** | Explicitly pushed to the mob-drop/level-system discussion (§4/§9) — whether it's the existing vanilla Experience Bottle (already in the old catalog at 12) or a new drink-for-XP item is still unanswered |
+
+Dropped from the old catalog entirely (not carried into Tier 3): Name Tag,
+Saddle, Firework Rocket, Ender Pearl, Echo Shard, Heart of the Sea,
+Enchanted Golden Apple, Netherite Upgrade Smithing Template, Trident (all
+considered, all rejected in favor of the list above). Enchanted Golden
+Apple was floated as worth keeping but never confirmed either way.
+
+**Harvest/Luck potion buff strength, still needs a final call.** The old
+buffs (`HarvestFaucet.HARVEST_BOOST_I`/`_II`, flat `+1.5`/`+4` percentage
+points) were calibrated against the old single-crop 1% base and don't
+scale sensibly now that base rates vary 2.5%-10% across crops. A
+percentage-of-base multiplier was proposed (+50%/+150%) instead of a flat
+addition, so the boost feels the same relative strength on every crop —
+**this was never confirmed**, only the flat *prices* above (30/40/30) were
+locked. Do not build the potion effect strength from the multiplier table
+in an earlier draft of this doc without checking back — only the prices
+are settled, not the numbers they buff.
 
 ### 4. Territory claims
 
