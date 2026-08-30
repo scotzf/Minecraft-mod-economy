@@ -2,6 +2,12 @@
 
 Project context for Claude Code. Read this before making changes.
 
+**A v2 redesign was planned 2026-08-30 — see "v2 redesign — planned
+2026-08-30, not yet built" near the end of this file before assuming any
+of the sections below (currency, shop catalog, interface, lockable chests,
+death/revive) are still current. That section explicitly wins on conflict
+until each piece is actually built.**
+
 ## What this is
 
 A Minecraft Java Edition mod adding a player-driven market economy:
@@ -14,11 +20,17 @@ system shop, and rented territory claims.
 alongside `loader_version` (0.19.3), `loom_version` (1.17.20), and
 `fabric_api_version` (0.158.0+26.2) — check those four together when bumping.
 **Loader:** Fabric (chosen for simpler API surface over NeoForge)
-**JDK:** 25 (Eclipse Temurin) — installed via winget, NOT the system default
-(that's still 1.8). `gradle.properties` sets `org.gradle.java.home` to point
-at it explicitly; the wrapper itself also needs `JAVA_HOME` set to the same
-path for the same reason when invoked from a shell that doesn't already have
-it exported.
+**JDK:** 25 (Eclipse Temurin) — install via winget
+(`winget install EclipseAdoptium.Temurin.25.JDK`), NOT the system default
+(commonly still an old JRE, which has no compiler). **`gradle.properties`
+deliberately does NOT set `org.gradle.java.home`** — a hardcoded path there
+broke on a second machine the first time this project moved computers, so
+Gradle's own `java.toolchain` block in `build.gradle` finds a JDK 25 itself
+instead. What a fresh shell does need is `JAVA_HOME` exported to the JDK 25
+install before running `./gradlew`, since Gradle's own launcher requires
+JVM 17+ and won't start on a stray JRE 1.8 `java` on PATH — see "Windows
+build environment note" under "Custom weapons" below for the exact error
+and fix.
 
 ## Toolchain
 
@@ -941,3 +953,171 @@ instantly.
 - Whether listings ever expire and return items to the seller
 - Whether rent is strictly auto-renew, or a manual `/claim pay` also exists
 - Whether `/pay` should exist at all, given players can hand over coins directly
+
+## v2 redesign — planned 2026-08-30, not yet built
+
+**A large redesign was planned in this session across 11 areas. None of it
+is implemented yet — this section is the plan, written down before code so
+the next session (or the next hour) doesn't have to re-derive it.** Where
+this contradicts an existing section above, **this section wins** — the
+older text stays only as history until each piece actually gets built and
+the corresponding old section gets rewritten or deleted. Update this note's
+date, or delete this whole section, once execution catches up.
+
+### 1. Currency
+
+**Custom currency item, dropped by multiple crops at different chances.**
+Replaces the poisonous-potato-as-currency design entirely — that design's
+core problem (every poisonous potato already in every world counts as
+pre-existing money) goes away once currency is a new item nothing else
+produces. Needs: one new registered item + a simple icon (currency icons
+are conventionally plain — a coin/token doesn't hit the "too basic" wall
+that killed hand-drawn *weapon* sprites), and the faucet reworked to hook
+every crop's harvest event, not just potato.
+
+**Still open — do not build until settled:**
+- Which crops, and their individual drop chances (wheat, potato, carrot,
+  beetroot, at minimum — melon/pumpkin/nether wart/sweet berries/cocoa
+  undecided)
+- Whether farm size still matters the way it did for the old single-potato
+  faucet, and whether a per-crop or overall cap is needed now that more
+  crops feed supply (more sources than the old design ever priced for)
+- Whether the Luck stat from the new level system (see §9) affects drop
+  chance — proposed as a stat/faucet synergy, not confirmed
+
+**Commands:** `/balance`, `/deposit <amount>`, `/withdraw <amount>`,
+`/donate <player> <amount>`. **Open: does `/donate` replace `/pay`, or do
+both exist?** They'd do the same thing under different names otherwise.
+
+**Shop block is removed. `/shop` opens the same UI instead, minus the
+Vault tab** (vault access becomes deposit/withdraw commands only, so the
+block dependency `PisoCommands.java` currently hard-requires goes away).
+This resolves cleanly against the "Interface: the Shop block is the real
+thing, still" section above — that section documents an earlier, different,
+never-finished plan to delete the block outright in favor of pure commands;
+this new plan keeps the GUI but changes how it opens.
+
+### 2. Player market
+
+UI keeps its Sell/Buy/BlackMarket tabs, now inside the `/shop`-opened menu
+per §1 rather than a placed block. No other change from the current
+`PisoShopMenu` design.
+
+### 3. System shop — restructured
+
+**Locked:** drop the wood→stone→iron→gold→diamond material ladder
+entirely. New tiers:
+
+| Tier | Contents |
+|---|---|
+| 1 | Tools — diamond only |
+| 2 | Gear/armor — diamond only, single-enchant as before (Unbreaking/Mending still banned, still two levels below max) |
+| 3 | Rare items — elytra, farming potions, an XP potion, **and Land Decks are sold here too** (folds `/deed buy` into the same catalog instead of being its own separate BlackMarket flow) |
+| 4 | **New** — the 15 custom elemental weapons become purchasable here. They have no price yet; today they're `/give`/creative-only. |
+
+Dropping the material ladder means the `price = material unit value ×
+recipe unit count` formula (System shop catalog, above) no longer applies —
+it only made sense spanning five materials. **Open: the flat per-tool-type
+diamond price isn't set.** Proposed default until told otherwise: keep the
+diamond numbers the old formula already produced (diamond pickaxe 210,
+etc.) as the new flat prices, so nothing needs re-balancing on day one —
+confirm or override.
+
+### 4. Territory claims
+
+No change. Land Deed purchase/activate/trust flow stays exactly as
+documented above, except deeds now sell from the shop's Tier 3 (§3) instead
+of a separate BlackMarket-only path.
+
+### 5. Lockable chests
+
+**No work needed — already matches what was asked for.** There is no Lock
+block or item today; chest access is already the claim-wide `ChestAccess`
+setting edited from the Land Deed book (see "Lockable chests" above,
+corrected earlier this session). Confirmed, not a new task.
+
+### 6. Combat — baseline confirmed, unchanged
+
+The 15-weapon set and its numbers (Molten/Ignite, Frost/Slowness,
+Blight/Poison, Soul/Lifesteal, Divine/Smite; Sword and Reach columns at
+vanilla iron sword stats 3.0/-2.4, Heavy column at vanilla iron axe stats
+6.0/-3.1) stay as built — see "Custom weapons — current state" above for
+the full table. The only change combat gets in this redesign is becoming
+purchasable (§3 Tier 4) and interacting with the new Attack/Defense/Speed/
+Luck stats from the level system (§9) once that scaling is decided.
+
+### 7. Anti-grief
+
+No change. TNT stays disabled. End crystals and beds keep exploding
+normally — reasoning confirmed: both already require rare materials to
+obtain, so they aren't a free griefing shortcut the way TNT was.
+
+### 8. Leaderboard
+
+**`/leaderboard`** — top 3 players and their balances (can build on the
+existing `PisoLeaderboard`/`/top` code, this is closer to a rename plus a
+narrower top-3 view than new tracking logic).
+
+**New: auto-broadcast every 2 in-game days.** A scheduled server-wide chat
+message of the same top-3 view. Low-risk to add — the day-counting pattern
+already exists for shop restocks (`ShopEntry.restockDays` /
+`PisoShopStock`), this reuses the same idea on a fixed 2-day interval
+instead of per-item.
+
+### 9. Level system — new
+
+**Stats: Attack, Defense, Speed, Luck.** Luck doubles into §1's crop drop
+chances — leveling up is meant to feel connected to the economy, not just
+combat, per the brief given when this was proposed.
+
+**XP sources, weighted farming < mobs < PvP** (locked, exact multipliers
+not set — proposed default: mob kill = 3x a farming action's XP, player
+kill = 3x a mob kill's XP, i.e. roughly 1 / 3 / 9; confirm or override).
+
+**Still fully open, blocking implementation:**
+- The level curve itself — XP required per level, and whether it's linear,
+  quadratic, or vanilla-style (vanilla XP-to-next-level is itself
+  non-linear and gets steeper after level 15 — worth deciding whether to
+  reuse vanilla's curve/UI or build an entirely separate stat-XP track so
+  it doesn't fight with vanilla enchanting XP spend)
+- How much each stat point actually does numerically (how much attack
+  damage per point, how much speed, etc.) — this is the "decide the
+  scaling first" piece explicitly flagged as unresolved
+- Whether stat points are auto-allocated per level or player-chosen
+
+### 10. PvP — health display
+
+**Mechanic still open.** The brief was "like a heart and number above
+someone's head," seen on another server, source/mod not identified.
+**Proposed default** (pending confirmation): a persistent floating
+nameplate line above every nearby player showing a heart icon + current/max
+health, always visible within normal render distance — this is the most
+common shape for this feature and matches "above head" most literally.
+The alternative read — only shown when directly targeted, or rendered as a
+boss-bar instead of a nameplate — is cheaper to build and less screen
+clutter; flag if that's preferred instead. Needs a client render layer
+either way (see CLAUDE.md's build-order note that custom client rendering
+is where rusty Java will hurt most).
+
+### 11. Revive system — numbers finalized, replaces "Death and revive" above
+
+This locks in different numbers than the "Death and revive" section
+earlier in this doc — that section is superseded, not just supplemented:
+
+- **Base cooldown: 120 seconds, +120 seconds per consecutive death**
+  (1st 120s, 2nd 240s, 3rd 360s, ... nth = 120×n seconds), **capped at 1
+  hour** (3600s — reached at the 30th consecutive death in-window, not the
+  3rd like the old draft).
+- **Consecutive-death count resets every 3 in-game days** (≈1 real hour, at
+  20 real minutes per in-game day) — a fixed elapsed-time window, not a
+  rolling hour from the first death like the old draft, and **not** reset
+  by paying to revive — only by the 3-day timer running out. Dying
+  repeatedly and always paying to skip still escalates the cooldown/price
+  for the next death within that window.
+- **Pay from vault to revive immediately.** Rate not explicitly given this
+  session — proposed default: keep the old draft's 3 Piso per second of
+  cooldown *remaining* (so partial skips, e.g. wait 90s of a 120s cooldown
+  then pay 30×3=90, stay possible exactly as before). At the new linear
+  escalation this means a full skip costs 360/720/1080/... up to 10,800 at
+  the 1-hour cap, rather than the old quadratic jump to 3,240 by the 3rd
+  death — confirm or override.
