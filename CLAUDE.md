@@ -150,6 +150,14 @@ Rusty Java, strong Python / Dart / Django background. When writing code here:
 - For small changes, give a targeted diff: which file, what to change, what
   command to run. Never a full project re-download.
 - Keep explanations short and precise.
+- Wants to **see** things, not read descriptions of them — rendering models
+  to images and showing a contact sheet moves things forward far faster than
+  prose. Decides fast and changes direction freely; write decisions into
+  this file as they're made rather than batching them up.
+- Pushed back, correctly, when caution was over-applied to personal/self-use
+  decisions (see the licensing note under "Custom weapons" — self-use of the
+  imported art was accepted, publishing it was flagged as the separate,
+  real decision).
 
 ## Currency design
 
@@ -471,6 +479,13 @@ not from yourself:
 This is separate from build (place/destroy) trust — a player can be trusted
 to build on your land without being able to touch your chests.
 
+**Known gap: the Lock item does not exist yet.** `ChestAccess`,
+`RestrictedChestMenu`/`RestrictedChestScreen`, and `ChestAccessGuard` are all
+built and enforce access levels correctly on a chest that already has one,
+but nothing registers an actual `Lock` item — it is in no shop catalog and
+has no texture, so there is currently no way to bind a chest in the first
+place. Whole feature is unreachable in game until that registration exists.
+
 ## Death and revive
 
 Dying starts a **120-second respawn cooldown**. The player may wait it out for
@@ -573,6 +588,15 @@ until the systems above work**. Three reasons it is last, all of them real:
   A cosmetic cape has no such problem: nobody can craft one and it competes
   with nothing.
 
+**Tried and rejected — do not re-propose these:**
+
+- **Crop contracts / a rotating order board**, proposed as the way to make a
+  farming economy work beyond the faucet. Dropped; the faucet stays the only
+  money source. This is why `DailyProgress` is not in the data model below
+  even though earlier drafts of this doc had it.
+- **Filipino farming-tool weapon naming** (Itak, Salakot, Bakya) for the
+  custom weapons above. The direction wanted is fantasy, not farming-themed.
+
 ## Data model
 
 ```java
@@ -635,6 +659,10 @@ Notes on that table:
   point of building the set this way round.
 - **Lifesteal and Smite are not implemented** — `Element` currently covers
   ignite, slow and poison only.
+- **No bow or crossbow art exists.** The Blades of Majestica pack covers 36
+  base items (swords, axes, picks, hoes, spears, mace) and contains no
+  ranged weapon models — the table above is melee-only for that reason, not
+  by design choice.
 - Everything stays **iron tier**, never diamond. The effect is the reason to
   carry one, never the damage number, so player-enchanted gear still wins a
   straight fight.
@@ -650,11 +678,28 @@ pack, rewrite its `textures` values from `item/x` to `pisomarket:item/x`,
 copy those PNGs (and any `.png.mcmeta` for animated ones), write an item
 definition in `assets/pisomarket/items/`, add a lang key, register the item.
 
-**NOT YET COMPILED.** No machine has built this yet. The 26.2 API names used
-in `com.pisomarket.combat` — `ToolMaterial.IRON`, `Item.Properties.sword()`,
-`hurtEnemy`, `igniteForSeconds` — are written from patterns in the existing
-code and have NOT been checked against real mappings. See "Reading failures".
-Expect symbol fixes on the first compile.
+**Compiles clean, confirmed 2026-08-30.** `./gradlew build` succeeded on the
+first try — every 26.2 API name used in `com.pisomarket.combat`
+(`ToolMaterial.IRON`, `Item.Properties.sword()`, `hurtEnemy`,
+`igniteForSeconds`, `MobEffects.SLOWNESS`) was correct as written, no symbol
+fixes needed. A headless `runServer` load also shows `(pisomarket) Piso
+Market initialized` with no mixin/registration errors. **Not yet verified:
+what it looks like in game.** Compiling proves the code is type-correct, not
+that the model/texture render right — item rendering, model geometry and
+display transforms can't be checked headlessly at all (`CLAUDE.md`'s
+"test with `runServer`" advice does not apply to this weapon work). Needs a
+human at the screen — via `./gradlew runClient`, or by dropping the built
+jar into a real `.minecraft/mods` folder — to confirm Frostblade renders
+correctly in hand, in inventory, and on the ground, and that Slowness
+actually applies on hit.
+
+**Windows build environment note:** on a fresh Windows machine the system
+default `java` may still be an old JRE (no compiler). Gradle's own launcher
+needs JVM 17+, so `JAVA_HOME` must point at a real JDK 25 install (e.g.
+`winget install EclipseAdoptium.Temurin.25.JDK`) when invoking `./gradlew` —
+`org.gradle.java.home` in `gradle.properties` stays deleted (see the comment
+there); export `JAVA_HOME` in the shell instead. This mirrors the same
+JRE-vs-JDK trap that blocked the build on Linux.
 
 ## Build order
 
