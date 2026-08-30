@@ -1,6 +1,6 @@
 {
 	"parent": "minecraft:item/generated",
 	"textures": {
-		"layer0": "pisomarket:item/custom_netherite_chestplate"
+		"layer0": "pisomarket:item/sentinel_helmet"
 	}
 }

@@ -55,21 +55,21 @@ src/main/resources/assets/pisomarket/textures/item/divine_axe_rhitta.png
 # and points at these paths, so a fresh clone compiles and runs — the
 # armor just renders as the missing-texture placeholder without these
 # eighteen files existing locally again.
-src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid/custom_diamond.png
-src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid/custom_netherite.png
-src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid/custom_gold.png
-src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid_leggings/custom_diamond.png
-src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid_leggings/custom_netherite.png
-src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid_leggings/custom_gold.png
-src/main/resources/assets/pisomarket/textures/item/custom_diamond_helmet.png
-src/main/resources/assets/pisomarket/textures/item/custom_diamond_chestplate.png
-src/main/resources/assets/pisomarket/textures/item/custom_diamond_leggings.png
-src/main/resources/assets/pisomarket/textures/item/custom_diamond_boots.png
-src/main/resources/assets/pisomarket/textures/item/custom_netherite_helmet.png
-src/main/resources/assets/pisomarket/textures/item/custom_netherite_chestplate.png
-src/main/resources/assets/pisomarket/textures/item/custom_netherite_leggings.png
-src/main/resources/assets/pisomarket/textures/item/custom_netherite_boots.png
-src/main/resources/assets/pisomarket/textures/item/custom_gold_helmet.png
-src/main/resources/assets/pisomarket/textures/item/custom_gold_chestplate.png
-src/main/resources/assets/pisomarket/textures/item/custom_gold_leggings.png
-src/main/resources/assets/pisomarket/textures/item/custom_gold_boots.png
+src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid/aegis.png
+src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid/bulwark.png
+src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid/sentinel.png
+src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid_leggings/aegis.png
+src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid_leggings/bulwark.png
+src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid_leggings/sentinel.png
+src/main/resources/assets/pisomarket/textures/item/aegis_helmet.png
+src/main/resources/assets/pisomarket/textures/item/aegis_chestplate.png
+src/main/resources/assets/pisomarket/textures/item/aegis_leggings.png
+src/main/resources/assets/pisomarket/textures/item/aegis_boots.png
+src/main/resources/assets/pisomarket/textures/item/bulwark_helmet.png
+src/main/resources/assets/pisomarket/textures/item/bulwark_chestplate.png
+src/main/resources/assets/pisomarket/textures/item/bulwark_leggings.png
+src/main/resources/assets/pisomarket/textures/item/bulwark_boots.png
+src/main/resources/assets/pisomarket/textures/item/sentinel_helmet.png
+src/main/resources/assets/pisomarket/textures/item/sentinel_chestplate.png
+src/main/resources/assets/pisomarket/textures/item/sentinel_leggings.png
+src/main/resources/assets/pisomarket/textures/item/sentinel_boots.png

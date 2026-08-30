@@ -1,6 +1,6 @@
 {
 	"parent": "minecraft:item/generated",
 	"textures": {
-		"layer0": "pisomarket:item/custom_netherite_helmet"
+		"layer0": "pisomarket:item/bulwark_helmet"
 	}
 }

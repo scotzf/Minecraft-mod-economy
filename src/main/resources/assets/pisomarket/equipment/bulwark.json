@@ -2,12 +2,12 @@
 	"layers": {
 		"humanoid": [
 			{
-				"texture": "pisomarket:custom_netherite"
+				"texture": "pisomarket:bulwark"
 			}
 		],
 		"humanoid_leggings": [
 			{
-				"texture": "pisomarket:custom_netherite"
+				"texture": "pisomarket:bulwark"
 			}
 		]
 	}

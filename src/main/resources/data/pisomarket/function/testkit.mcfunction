@@ -26,18 +26,18 @@ give @s pisomarket:divine_reaper
 # Item.Properties default doesn't have at class-load time. Protection V
 # is intentionally past vanilla's real max (IV) — see CLAUDE.md's combat
 # rebalance notes for why.
-give @s pisomarket:custom_gold_helmet[enchantments={"minecraft:protection":5,"minecraft:respiration":3,"minecraft:aqua_affinity":1,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
-give @s pisomarket:custom_gold_chestplate[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
-give @s pisomarket:custom_gold_leggings[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
-give @s pisomarket:custom_gold_boots[enchantments={"minecraft:protection":5,"minecraft:feather_falling":4,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
-give @s pisomarket:custom_diamond_helmet[enchantments={"minecraft:protection":5,"minecraft:respiration":3,"minecraft:aqua_affinity":1,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
-give @s pisomarket:custom_diamond_chestplate[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
-give @s pisomarket:custom_diamond_leggings[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
-give @s pisomarket:custom_diamond_boots[enchantments={"minecraft:protection":5,"minecraft:feather_falling":4,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
-give @s pisomarket:custom_netherite_helmet[enchantments={"minecraft:protection":5,"minecraft:respiration":3,"minecraft:aqua_affinity":1,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
-give @s pisomarket:custom_netherite_chestplate[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
-give @s pisomarket:custom_netherite_leggings[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
-give @s pisomarket:custom_netherite_boots[enchantments={"minecraft:protection":5,"minecraft:feather_falling":4,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:sentinel_helmet[enchantments={"minecraft:protection":5,"minecraft:respiration":3,"minecraft:aqua_affinity":1,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:sentinel_chestplate[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:sentinel_leggings[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:sentinel_boots[enchantments={"minecraft:protection":5,"minecraft:feather_falling":4,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:aegis_helmet[enchantments={"minecraft:protection":5,"minecraft:respiration":3,"minecraft:aqua_affinity":1,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:aegis_chestplate[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:aegis_leggings[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:aegis_boots[enchantments={"minecraft:protection":5,"minecraft:feather_falling":4,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:bulwark_helmet[enchantments={"minecraft:protection":5,"minecraft:respiration":3,"minecraft:aqua_affinity":1,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:bulwark_chestplate[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:bulwark_leggings[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:bulwark_boots[enchantments={"minecraft:protection":5,"minecraft:feather_falling":4,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
 # Currency — enough poisonous potatoes to test the Shop block's Vault tab
 give @s poisonous_potato 64
 # The Shop block itself — deposit/withdraw only works through this (see

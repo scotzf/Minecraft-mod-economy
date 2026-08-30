@@ -1,27 +1,99 @@
 package com.pisomarket.combat;
 
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
 
-// One class for all six weapons — the only thing that varies between them is
-// which Element they carry and which tool profile they were built with, both
-// passed in at construction (see ElementalWeapons).
+// One class for every custom weapon — what varies between them is passed in
+// at construction (see ElementalWeapons): which Element they carry, how
+// strong and how long that effect is, whether they crit, and whether they
+// cleave.
 public class ElementalBladeItem extends Item {
-	private final Element element;
+	// How far a cleave reaches past the primary target, in blocks.
+	private static final double CLEAVE_RADIUS = 3.0;
+	// Cleave hits for this fraction of the weapon's damage. Deliberately
+	// well under 1.0: cleave is a farming convenience, and at full damage
+	// a cleave weapon would simply be strictly better than a non-cleave
+	// one of the same tier in every situation including duels.
+	private static final float CLEAVE_DAMAGE_FRACTION = 0.5F;
 
-	public ElementalBladeItem(final Element element, final Item.Properties properties) {
+	private final Element element;
+	private final float effectMagnitude;
+	private final int effectDurationTicks;
+	private final float critChance;
+	private final float critMultiplier;
+	private final boolean cleave;
+	// The weapon's own final damage, kept so crit and cleave can be
+	// computed from it. Vanilla applies base damage through the attribute
+	// system before hurtEnemy runs, so it is not otherwise available here.
+	private final float baseDamage;
+
+	public ElementalBladeItem(
+			final Element element, final float effectMagnitude, final int effectDurationTicks,
+			final float critChance, final float critMultiplier, final boolean cleave,
+			final float baseDamage, final Item.Properties properties
+	) {
 		super(properties);
 		this.element = element;
+		this.effectMagnitude = effectMagnitude;
+		this.effectDurationTicks = effectDurationTicks;
+		this.critChance = critChance;
+		this.critMultiplier = critMultiplier;
+		this.cleave = cleave;
+		this.baseDamage = baseDamage;
 	}
 
 	@Override
 	public void hurtEnemy(final ItemStack stack, final LivingEntity target, final LivingEntity attacker) {
 		super.hurtEnemy(stack, target, attacker);
+
 		// Server side only: applying an effect client-side desyncs the
 		// target's effect list and the status icon flickers.
-		if (!target.level().isClientSide()) {
-			this.element.onHit(target, attacker);
+		if (!(target.level() instanceof ServerLevel serverLevel)) {
+			return;
+		}
+
+		this.element.onHit(target, attacker, this.effectMagnitude, this.effectDurationTicks);
+
+		// Crit — a flat chance on EVERY swing, not vanilla's fall-attack
+		// crit. Vanilla's only fires while falling and not sprinting, which
+		// most players never notice, so an axe's "better crit" identity
+		// would have been invisible. Rolled the same way the harvest faucet
+		// and Luck potion roll their chances.
+		if (this.critChance > 0.0F && ThreadLocalRandom.current().nextFloat() < this.critChance) {
+			float bonus = this.baseDamage * (this.critMultiplier - 1.0F);
+			target.hurtServer(serverLevel, target.damageSources().generic(), bonus);
+		}
+
+		if (this.cleave) {
+			this.applyCleave(serverLevel, target, attacker);
+		}
+	}
+
+	// Hits everything living near the primary target for a fraction of the
+	// weapon's damage. This is the mob-farming mechanic for the weapons that
+	// aren't Divine Axe Rhitta (which farms undead by one-shotting instead).
+	private void applyCleave(final ServerLevel level, final LivingEntity target, final LivingEntity attacker) {
+		AABB area = target.getBoundingBox().inflate(CLEAVE_RADIUS);
+		List<LivingEntity> nearby = level.getEntitiesOfClass(LivingEntity.class, area);
+		float cleaveDamage = this.baseDamage * CLEAVE_DAMAGE_FRACTION;
+
+		for (LivingEntity other : nearby) {
+			// Never the attacker (cleaving yourself), never the primary
+			// target (it already took a full hit), and never a teammate.
+			if (other == attacker || other == target || other.isAlliedTo(attacker)) {
+				continue;
+			}
+			// Deliberately a plain generic damage source rather than the
+			// weapon's own attack path: routing cleave back through a real
+			// weapon attack would re-trigger hurtEnemy on every entity hit,
+			// which cascades into an effectively infinite chain.
+			other.hurtServer(level, other.damageSources().generic(), cleaveDamage);
 		}
 	}
 

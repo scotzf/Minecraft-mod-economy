@@ -1,6 +1,6 @@
 {
 	"parent": "minecraft:item/generated",
 	"textures": {
-		"layer0": "pisomarket:item/custom_diamond_helmet"
+		"layer0": "pisomarket:item/aegis_boots"
 	}
 }

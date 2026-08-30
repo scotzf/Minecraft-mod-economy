@@ -56,14 +56,14 @@ public final class CustomArmorContent {
 	private static final Map<ArmorType, Item> GOLD_ITEMS = new EnumMap<>(ArmorType.class);
 
 	static {
-		ArmorMaterial customDiamond = rebuilt(ArmorMaterials.DIAMOND, DIAMOND_TOUGHNESS_PER_PIECE, "custom_diamond");
-		ArmorMaterial customNetherite = rebuilt(ArmorMaterials.NETHERITE, NETHERITE_TOUGHNESS_PER_PIECE, "custom_netherite");
-		ArmorMaterial customGold = rebuilt(ArmorMaterials.GOLD, GOLD_TOUGHNESS_PER_PIECE, "custom_gold");
+		ArmorMaterial customDiamond = rebuilt(ArmorMaterials.DIAMOND, DIAMOND_TOUGHNESS_PER_PIECE, "aegis");
+		ArmorMaterial customNetherite = rebuilt(ArmorMaterials.NETHERITE, NETHERITE_TOUGHNESS_PER_PIECE, "bulwark");
+		ArmorMaterial customGold = rebuilt(ArmorMaterials.GOLD, GOLD_TOUGHNESS_PER_PIECE, "sentinel");
 
 		for (ArmorType type : new ArmorType[] {ArmorType.HELMET, ArmorType.CHESTPLATE, ArmorType.LEGGINGS, ArmorType.BOOTS}) {
-			DIAMOND_ITEMS.put(type, create("custom_diamond_" + type.getName(), customDiamond, type));
-			NETHERITE_ITEMS.put(type, create("custom_netherite_" + type.getName(), customNetherite, type));
-			GOLD_ITEMS.put(type, create("custom_gold_" + type.getName(), customGold, type));
+			DIAMOND_ITEMS.put(type, create("aegis_" + type.getName(), customDiamond, type));
+			NETHERITE_ITEMS.put(type, create("bulwark_" + type.getName(), customNetherite, type));
+			GOLD_ITEMS.put(type, create("sentinel_" + type.getName(), customGold, type));
 		}
 	}
 
