@@ -80,7 +80,7 @@ public final class WingedBootsLayer extends RenderLayer<AvatarRenderState, Playe
 			final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final int lightCoords,
 			final AvatarRenderState state, final float yRot, final float xRot
 	) {
-		if (state.feetEquipment.getItem() != com.pisomarket.combat.WingedBootsContent.WINGED_BOOTS) {
+		if (!com.pisomarket.combat.WingedBootsContent.ALL.contains(state.feetEquipment.getItem())) {
 			return;
 		}
 
