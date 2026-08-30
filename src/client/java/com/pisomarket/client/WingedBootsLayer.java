@@ -35,7 +35,7 @@ import net.minecraft.resources.Identifier;
 // it in TLauncher.
 public final class WingedBootsLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 	private static final Identifier ELYTRA_TEXTURE =
-			Identifier.fromNamespaceAndPath("minecraft", "textures/entity/elytra.png");
+			Identifier.fromNamespaceAndPath("minecraft", "textures/entity/equipment/wings/elytra.png");
 
 	// Vanilla legs are 4 wide x 12 tall x 4 deep, origin (rotation pivot) at
 	// the hip. The ankle is near the bottom of that, hence Y close to 12.
@@ -54,17 +54,22 @@ public final class WingedBootsLayer extends RenderLayer<AvatarRenderState, Playe
 	public static LayerDefinition createLayer() {
 		MeshDefinition mesh = new MeshDefinition();
 		PartDefinition root = mesh.getRoot();
-		// Small flat boxes, same texOffs region the vanilla elytra model
-		// reads its feather texture from, just a much smaller box than the
-		// full-size wing (4 wide x 6 tall x 1 thick, vs elytra's 10x20x2).
+		// Small flat boxes. texOffs(35, 1) is NOT copied from the vanilla
+		// elytra model's own offset (that was tried first and was wrong —
+		// at this box's much smaller size it landed on a nearly blank
+		// corner of the texture, which is why the wings didn't render at
+		// all). Checked pixel-by-pixel against the real texture instead:
+		// the region this box's front face reads (36,2 to 40,8) is
+		// confirmed fully opaque, sampling the actual feathered part of
+		// the elytra texture rather than empty margin.
 		root.addOrReplaceChild(
 				"left_wing",
-				CubeListBuilder.create().texOffs(22, 0).addBox(-4.0F, 0.0F, 0.0F, 4.0F, 6.0F, 1.0F),
+				CubeListBuilder.create().texOffs(35, 1).addBox(-4.0F, 0.0F, 0.0F, 4.0F, 6.0F, 1.0F),
 				PartPose.offsetAndRotation(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, (float) (-Math.PI / 6))
 		);
 		root.addOrReplaceChild(
 				"right_wing",
-				CubeListBuilder.create().texOffs(22, 0).mirror().addBox(0.0F, 0.0F, 0.0F, 4.0F, 6.0F, 1.0F),
+				CubeListBuilder.create().texOffs(35, 1).mirror().addBox(0.0F, 0.0F, 0.0F, 4.0F, 6.0F, 1.0F),
 				PartPose.offsetAndRotation(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, (float) (Math.PI / 6))
 		);
 		return LayerDefinition.create(mesh, 64, 32);
