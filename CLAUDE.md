@@ -574,6 +574,14 @@ since chests are vanilla blocks, not this mod's own.
 
 ## Death and revive
 
+**Superseded, 2026-08-30 — see v2 redesign §11 and `ReviveManager.java`.**
+This section's design (below) is what got planned first; the numbers that
+actually shipped are different (linear 120s/death instead of quadratic,
+capped at 1 hour instead of the 3rd death, reset every 3 in-game days
+instead of a rolling hour) and the mechanism is different too (spectator
+hold after a normal respawn, not a held death screen). Kept here as
+history, not current behavior.
+
 Dying starts a **120-second respawn cooldown**. The player may wait it out for
 free, or **pay to respawn immediately**.
 
@@ -847,10 +855,20 @@ later and are built on top of these.
 
 **Player — money**
 - `/balance` — vault balance (cash in hand is visible in the inventory)
-- `/pay <player> <amount>` — vault-to-vault transfer; recipient may be offline
-- `/deposit [amount]` — inventory coins → vault
-- `/withdraw <amount>` — vault → inventory coins, needs inventory space
-- `/leaderboard` — the wealth leaderboard snapshot (renamed from `/top`)
+- `/donate <player> <amount>` — vault-to-vault transfer; recipient may be
+  offline. **Renamed from `/pay` 2026-08-30** per the v2 redesign §1c —
+  same command (`PisoCommands.donate`), new name only.
+- `/deposit [amount]` and `/withdraw <amount>` — **listed here as the
+  eventual v2 design, not current reality.** Today these commands do NOT
+  exist; deposit/withdraw only works through the Shop block's Vault tab —
+  see "Interface: the Shop block is the real thing, still" above. They'll
+  become real commands once §1d of the v2 redesign (shop block removed,
+  `/shop` opens the UI instead) is actually built.
+- `/top` — the wealth leaderboard snapshot. **Still `/top`, not renamed** —
+  this line claimed "renamed from `/top`" before this correction, but
+  `LeaderboardCommands.java` registers `"top"`, nothing else. The rename to
+  `/leaderboard` (plus narrowing to top 3, plus a 2-in-game-day
+  auto-broadcast) is v2 redesign §8, not built yet.
 
 **Player — market** (asynchronous; seller and buyer need not be online together)
 - `/market list <price>` — list the held stack, item moves into world storage
@@ -864,10 +882,17 @@ later and are built on top of these.
 - `/shop buy <id> [qty]` — purchase, deducts balance
 
 **Player — travel and death**
-- `/warp` — return to the last waypoint interacted with; 5-minute cooldown,
-  refused if damaged in the last 5 seconds
-- Respawning early is a prompt on the death screen, not a command — see
-  "Death and revive"
+- `/warp` — still design-only, not built. See "Waypoints" above.
+- `/revive` — pay from the vault to end an active death-hold immediately.
+  **Built 2026-08-30**, implementing v2 redesign §11 (`ReviveManager.java`,
+  `ReviveState.java`), which supersedes the earlier "Death and revive"
+  section above — that section's numbers (quadratic pricing, 3-death cap,
+  rolling hour) are NOT what got built; the real numbers are §11's. No
+  death-screen prompt exists — dying respawns normally, then the player is
+  switched to spectator for the hold instead of the death screen being
+  held open (see the comment at the top of `ReviveManager.java` for why:
+  intercepting the respawn button is exactly the click-vs-server-denial
+  resync problem this doc already warns about elsewhere).
 
 **Player — territory**
 - Land Deed (bought from BlackMarket) — use it on unclaimed ground to
@@ -986,8 +1011,10 @@ every crop's harvest event, not just potato.
   chance — proposed as a stat/faucet synergy, not confirmed
 
 **Commands:** `/balance`, `/deposit <amount>`, `/withdraw <amount>`,
-`/donate <player> <amount>`. **Open: does `/donate` replace `/pay`, or do
-both exist?** They'd do the same thing under different names otherwise.
+`/donate <player> <amount>`. **`/donate` replaces `/pay`, confirmed and
+built 2026-08-30** — `PisoCommands.java` now registers `donate`, not `pay`.
+`/deposit` and `/withdraw` still don't exist as commands — they're blocked
+on removing the Shop block dependency, same as noted in §1d below.
 
 **Shop block is removed. `/shop` opens the same UI instead, minus the
 Vault tab** (vault access becomes deposit/withdraw commands only, so the
@@ -1087,22 +1114,24 @@ kill = 3x a mob kill's XP, i.e. roughly 1 / 3 / 9; confirm or override).
 
 ### 10. PvP — health display
 
-**Mechanic still open.** The brief was "like a heart and number above
-someone's head," seen on another server, source/mod not identified.
-**Proposed default** (pending confirmation): a persistent floating
-nameplate line above every nearby player showing a heart icon + current/max
-health, always visible within normal render distance — this is the most
-common shape for this feature and matches "above head" most literally.
-The alternative read — only shown when directly targeted, or rendered as a
-boss-bar instead of a nameplate — is cheaper to build and less screen
-clutter; flag if that's preferred instead. Needs a client render layer
-either way (see CLAUDE.md's build-order note that custom client rendering
-is where rusty Java will hurt most).
+**Built 2026-08-30, confirmed reading: persistent, always visible.**
+Implemented as vanilla's own `below_name` scoreboard display slot with a
+`health`-criteria objective (`data/pisomarket/function/init.mcfunction`,
+run automatically via `data/minecraft/tags/function/load.json`) — no
+custom client render layer needed at all, which sidesteps the exact "rusty
+Java will hurt most here" risk this doc flags for client rendering
+elsewhere. This is a small heart icon + number under every player's
+nametag, standard vanilla behavior once the objective is set as the
+display slot — matches "like a heart and number above someone's head"
+closely enough that it's very likely the same technique whatever server
+this was seen on used.
 
-### 11. Revive system — numbers finalized, replaces "Death and revive" above
+### 11. Revive system — built, numbers finalized, replaces "Death and revive" above
 
-This locks in different numbers than the "Death and revive" section
-earlier in this doc — that section is superseded, not just supplemented:
+**Built 2026-08-30** (`ReviveManager.java`, `ReviveState.java`, `/revive`
+command). This locks in different numbers than the "Death and revive"
+section earlier in this doc — that section is superseded, not just
+supplemented:
 
 - **Base cooldown: 120 seconds, +120 seconds per consecutive death**
   (1st 120s, 2nd 240s, 3rd 360s, ... nth = 120×n seconds), **capped at 1
@@ -1114,10 +1143,19 @@ earlier in this doc — that section is superseded, not just supplemented:
   by paying to revive — only by the 3-day timer running out. Dying
   repeatedly and always paying to skip still escalates the cooldown/price
   for the next death within that window.
-- **Pay from vault to revive immediately.** Rate not explicitly given this
-  session — proposed default: keep the old draft's 3 Piso per second of
-  cooldown *remaining* (so partial skips, e.g. wait 90s of a 120s cooldown
-  then pay 30×3=90, stay possible exactly as before). At the new linear
-  escalation this means a full skip costs 360/720/1080/... up to 10,800 at
-  the 1-hour cap, rather than the old quadratic jump to 3,240 by the 3rd
-  death — confirm or override.
+- **Pay from vault to revive immediately: 3 Piso per second of cooldown
+  remaining**, confirmed — kept the old draft's rate since it wasn't
+  challenged. Partial skips work exactly like the old draft (wait 90s of a
+  120s cooldown, then pay 30×3=90 for the rest). At the new linear
+  escalation a full skip costs 360/720/1080/... up to 10,800 at the 1-hour
+  cap, rather than the old quadratic jump to 3,240 by the 3rd death.
+- **Mechanism differs from the original design on purpose**: rather than
+  holding the death screen open (the fiddly click-interception path this
+  doc already warns about), a death is allowed to respawn normally and the
+  freshly-respawned player is immediately switched to `GameType.SPECTATOR`
+  for the hold, then switched back (to whatever gamemode they were in
+  before dying) when the timer elapses or `/revive` is paid. Simpler, and
+  the SavedData (`ReviveState`) only persists the death-streak count, not
+  the active hold — a mid-cooldown server restart releasing everyone is an
+  accepted edge case; forgetting how many times someone already died this
+  window is not.

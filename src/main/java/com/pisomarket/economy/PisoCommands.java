@@ -15,8 +15,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.NameAndId;
 
-// Registers /balance and /pay. See CLAUDE.md's "In-game
+// Registers /balance and /donate. See CLAUDE.md's "In-game
 // command surface" for the full documented behavior of each.
+// /donate replaces /pay as of the v2 redesign (same behavior, new name).
 public final class PisoCommands {
 	private PisoCommands() {
 	}
@@ -26,12 +27,12 @@ public final class PisoCommands {
 			dispatcher.register(Commands.literal("balance").executes(PisoCommands::balance));
 
 			dispatcher.register(
-					Commands.literal("pay")
+					Commands.literal("donate")
 							.then(
 									Commands.argument("player", GameProfileArgument.gameProfile())
 											.then(
 													Commands.argument("amount", LongArgumentType.longArg(1))
-															.executes(PisoCommands::pay)
+															.executes(PisoCommands::donate)
 											)
 							)
 			);
@@ -60,7 +61,7 @@ public final class PisoCommands {
 		return 1;
 	}
 
-	private static int pay(final com.mojang.brigadier.context.CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+	private static int donate(final com.mojang.brigadier.context.CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
 		ServerPlayer sender = context.getSource().getPlayerOrException();
 		long amount = LongArgumentType.getLong(context, "amount");
 
@@ -72,7 +73,7 @@ public final class PisoCommands {
 		UUID targetId = target.id();
 
 		if (targetId.equals(sender.getUUID())) {
-			context.getSource().sendFailure(Component.literal("You can't pay yourself"));
+			context.getSource().sendFailure(Component.literal("You can't donate to yourself"));
 			return 0;
 		}
 
@@ -90,7 +91,7 @@ public final class PisoCommands {
 		}
 
 		String targetName = target.name();
-		context.getSource().sendSuccess(() -> Component.literal("Paid " + amount + " to " + targetName), false);
+		context.getSource().sendSuccess(() -> Component.literal("Donated " + amount + " to " + targetName), false);
 		return 1;
 	}
 
