@@ -598,6 +598,64 @@ wealth, and `/eco total` can only count the vault plus estimate the rest.
 Store reset and paid-through dates as **day numbers, not timestamps** —
 integer comparison instead of date math, and it survives restarts cleanly.
 
+## Custom weapons — current state
+
+**Art comes from the Blades of Majestica resource pack**, a third-party pack
+by Eftann. It is 3D: each weapon is a Blockbench model of 30-157 cuboid
+elements with a 128x128 texture, some with animated overlay strips. This is
+why it looks the way it does — it is geometry, not pixel art, and no flat
+16x16 or 32x32 sprite will ever match it.
+
+**Licensing, stated plainly so it is not rediscovered later:** the pack is
+All Rights Reserved and several designs are third-party IP (Crescent Rose is
+RWBY, Scissor Blade is Kill la Kill, Tengen's Blade is Demon Slayer, Divine
+Axe Rhitta is Black Clover). Importing it was a deliberate **self-use**
+decision. **This repository is public on GitHub** — pushing the imported art
+publishes it to everyone, which is a different act from using it privately.
+If that matters, `git rm` the imported textures and models and keep them
+local, or make the repo private.
+
+**The weapon set is designed around the pack's own matched families**, not
+around invented elements. This was the key lesson: the artist built coherent
+sets, and picking from one family gives visual consistency for free.
+Cherry-picking unrelated models across families looked wrong immediately.
+
+| Line | Sword | Heavy | Reach | On hit |
+|---|---|---|---|---|
+| Molten | `moltensword` | `moltenblade` | `hearthflame` (hammer) | Ignite |
+| Frost | `frostblade` | `frostaxe` | `frostscythe` | Slowness |
+| Blight | `abominableblade` | `abominablegreatsaber` | `abominablescythe` | Poison |
+| Soul | `souledge` | `soul_devourer` | `soul_collector` | Lifesteal |
+| Divine | `divine_justice` | `divineaxerhitta` | `divine_reaper` | Smite |
+
+Notes on that table:
+
+- **Molten has a hammer, not a scythe, because the pack contains no fire
+  scythe.** Letting the available art decide the weapon class is the whole
+  point of building the set this way round.
+- **Lifesteal and Smite are not implemented** — `Element` currently covers
+  ignite, slow and poison only.
+- Everything stays **iron tier**, never diamond. The effect is the reason to
+  carry one, never the damage number, so player-enchanted gear still wins a
+  straight fight.
+
+**Only one is built so far: `pisomarket:frostblade`.** It was chosen as the
+sample because it is the only strong candidate with no animated overlay, so
+what renders in game is exactly what was previewed — anything wrong is a real
+bug rather than a preview artefact. It is registered, in the COMBAT creative
+tab, and reachable with `/give @s pisomarket:frostblade`.
+
+**How an import works** (repeat per weapon): copy the model JSON from the
+pack, rewrite its `textures` values from `item/x` to `pisomarket:item/x`,
+copy those PNGs (and any `.png.mcmeta` for animated ones), write an item
+definition in `assets/pisomarket/items/`, add a lang key, register the item.
+
+**NOT YET COMPILED.** No machine has built this yet. The 26.2 API names used
+in `com.pisomarket.combat` — `ToolMaterial.IRON`, `Item.Properties.sword()`,
+`hurtEnemy`, `igniteForSeconds` — are written from patterns in the existing
+code and have NOT been checked against real mappings. See "Reading failures".
+Expect symbol fixes on the first compile.
+
 ## Build order
 
 1. Template skeleton — confirm `./gradlew runClient` launches with the mod
