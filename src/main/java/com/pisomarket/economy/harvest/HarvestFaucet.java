@@ -4,85 +4,103 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 
-import net.minecraft.network.chat.Component;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.NetherWartBlock;
+import net.minecraft.world.level.block.state.BlockState;
 
-import com.pisomarket.economy.PisoVault;
-import com.pisomarket.economy.VaultSync;
+import com.pisomarket.economy.PisoCurrency;
 
-// The only faucet in the economy — the single place new money enters the
-// world (see CLAUDE.md "Economy: one faucet, one set of sinks").
+// The farming faucet — one of two places new money enters the world (mob
+// drops are the other; see MobDrops).
 //
-// It fires on every player block break. If the broken block was a fully
-// grown potato crop, it rolls DROP_CHANCE; on a hit, one unit is added
-// straight to the player's VAULT rather than dropped on the ground, so a
-// payout can't be lost to lava or a despawn the instant it is earned.
+// Two deliberate properties, both load-bearing:
 //
-// It fires on PLAYER breaks only, which is load-bearing: automated potato
-// farms harvested by pistons or villagers create no money at all. That is
-// what makes it safe to have no daily cap right now.
+// PLAYER-BREAK ONLY. Hooked on PlayerBlockBreakEvents, so piston and
+// villager farms mint nothing no matter how large they are. This is the
+// single reason it is safe to have no daily cap.
 //
-// Deliberately no daily cap — see CLAUDE.md for the reasoning and for when
-// to revisit it.
+// PAYS A PHYSICAL DROP, not a vault deposit. The currency is an item, so
+// earning it should put an item on the ground. The old behaviour deposited
+// straight into the vault, which made money invisible and contradicted the
+// whole point of item currency. Losing a payout to lava is an accepted
+// passive sink.
 public final class HarvestFaucet {
-	// Base payout chance per mature potato harvested by hand.
-	public static final double DROP_CHANCE = 0.01;
-
-	// Extra chance added by the Harvest potions (see HarvestPotionItem).
-	// Amplifier 0 is the weaker potion, amplifier 1 the stronger.
-	public static final double HARVEST_BOOST_I = 0.015;
-	public static final double HARVEST_BOOST_II = 0.04;
+	// Per-crop drop chance. Nether wart is highest because reaching the
+	// Nether at all is its own barrier, already priced in.
+	public static final double CHANCE_WHEAT = 0.025;
+	public static final double CHANCE_POTATO = 0.025;
+	public static final double CHANCE_CARROT = 0.025;
+	public static final double CHANCE_BEETROOT = 0.05;
+	public static final double CHANCE_NETHER_WART = 0.10;
 
 	private HarvestFaucet() {
 	}
 
-	// The effective drop chance for this player right now, base plus any
-	// active Harvest potion. Public so the shop can price the potions
-	// against the real numbers instead of hardcoded duplicates.
-	public static double chanceFor(final ServerPlayer player) {
-		MobEffectInstance boost = player.getEffect(PisoEffects.HARVEST_BOOST);
-		if (boost == null) {
-			return DROP_CHANCE;
+	// Returns the base drop chance for a fully grown crop, or 0 if this
+	// block is not a currency-bearing crop (or is not yet mature).
+	//
+	// Melon/pumpkin/sugar cane/cocoa/berries are deliberately absent: they
+	// are the renewable crops that regrow without replanting, so an
+	// unbounded automated farm would dominate the faucet. Adding them needs
+	// a lower rate or a cap decided first.
+	public static double baseChanceFor(final BlockState state) {
+		if (state.is(Blocks.NETHER_WART)) {
+			// NetherWartBlock is NOT a CropBlock and has its own 0-3 age
+			// property, so isMaxAge() is unavailable here.
+			return state.getValue(NetherWartBlock.AGE) >= NetherWartBlock.MAX_AGE ? CHANCE_NETHER_WART : 0.0;
 		}
-		return DROP_CHANCE + (boost.getAmplifier() >= 1 ? HARVEST_BOOST_II : HARVEST_BOOST_I);
+
+		if (!(state.getBlock() instanceof CropBlock crop) || !crop.isMaxAge(state)) {
+			return 0.0;
+		}
+
+		if (state.is(Blocks.WHEAT)) {
+			return CHANCE_WHEAT;
+		}
+		if (state.is(Blocks.POTATOES)) {
+			return CHANCE_POTATO;
+		}
+		if (state.is(Blocks.CARROTS)) {
+			return CHANCE_CARROT;
+		}
+		if (state.is(Blocks.BEETROOTS)) {
+			return CHANCE_BEETROOT;
+		}
+		return 0.0;
 	}
 
 	public static void register() {
 		PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, blockEntity) -> {
 			// Cheapest checks first — this runs on EVERY block any player
-			// breaks, so the overwhelmingly common case (not a potato) must
-			// cost almost nothing and must not touch storage at all.
+			// breaks, so the overwhelmingly common case (not a crop) must
+			// cost almost nothing.
 			if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
 				return;
 			}
-			if (!state.is(Blocks.POTATOES)) {
-				return;
-			}
-			if (!(state.getBlock() instanceof CropBlock cropBlock) || !cropBlock.isMaxAge(state)) {
-				return;
-			}
 
-			// Only now do we look at effects — two O(1) map lookups on the
-			// player's own effect list, and only for a mature potato.
-			if (ThreadLocalRandom.current().nextDouble() >= chanceFor(serverPlayer)) {
+			double base = baseChanceFor(state);
+			if (base <= 0.0) {
 				return;
 			}
 
-			// Luck: a successful payout gets rolled a second time, so the
-			// potion doubles a hit rather than making hits more likely.
-			int payout = player.hasEffect(PisoEffects.HARVEST_LUCK) ? 2 : 1;
+			int payout = PisoLuck.rollPayout(serverPlayer, base);
+			if (payout <= 0) {
+				return;
+			}
 
-			PisoVault vault = serverPlayer.level().getServer().getDataStorage().computeIfAbsent(PisoVault.TYPE);
-			vault.deposit(serverPlayer.getUUID(), payout);
-			VaultSync.sync(serverPlayer);
-			serverPlayer.sendSystemMessage(Component.literal(
-					payout > 1
-							? "Lucky harvest — two potatoes slipped into your vault (+" + payout + ")"
-							: "A poisonous potato slipped into your vault (+1)"
-			));
+			dropShards(level, pos, payout);
 		});
+	}
+
+	// Pops the reward on the ground the same way a broken crop pops its own
+	// seeds, so it behaves like any other harvest yield.
+	public static void dropShards(final Level level, final BlockPos pos, final int count) {
+		Block.popResource(level, pos, new ItemStack(PisoCurrency.SUNSTONE_SHARD, count));
 	}
 }

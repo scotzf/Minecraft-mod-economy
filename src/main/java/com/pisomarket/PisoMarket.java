@@ -28,8 +28,10 @@ public class PisoMarket implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		com.pisomarket.economy.PisoCurrency.register();
 		PisoCommands.register();
 		EcoCommands.register();
+		com.pisomarket.economy.VaultCommands.register();
 		VaultSync.register();
 		com.pisomarket.economy.LeaderboardCommands.register();
 		com.pisomarket.economy.LeaderboardTracker.register();
@@ -50,6 +52,11 @@ public class PisoMarket implements ModInitializer {
 		ChestAccessGuard.register();
 		com.pisomarket.combat.ElementalWeapons.register();
 		com.pisomarket.combat.CustomArmorContent.register();
+		com.pisomarket.combat.MobDrops.register();
+		com.pisomarket.combat.MobScaling.register();
+		com.pisomarket.level.LevelManager.register();
+		com.pisomarket.travel.WaypointContent.register();
+		com.pisomarket.travel.WarpCommand.register();
 		PisoCreativeTabs.register();
 		LOGGER.info("Piso Market initialized");
 	}

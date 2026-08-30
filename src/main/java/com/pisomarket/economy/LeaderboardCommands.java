@@ -10,7 +10,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 
-// /top — shows the last published wealth snapshot. Read-only; the board
+// /leaderboard — shows the last published wealth snapshot. Read-only; the board
 // itself is built by LeaderboardTracker every 2 in-game days.
 public final class LeaderboardCommands {
 	private LeaderboardCommands() {
@@ -18,7 +18,7 @@ public final class LeaderboardCommands {
 
 	public static void register() {
 		CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) ->
-				dispatcher.register(Commands.literal("top").executes(LeaderboardCommands::showTop))
+				dispatcher.register(Commands.literal("leaderboard").executes(LeaderboardCommands::showTop))
 		);
 	}
 
@@ -29,7 +29,7 @@ public final class LeaderboardCommands {
 		if (entries.isEmpty()) {
 			context.getSource().sendSuccess(
 					() -> Component.literal("No leaderboard yet — it appears within seconds of anyone "
-							+ "holding potatoes or having a vault balance, then refreshes every "
+							+ "holding Shards or having a vault balance, then refreshes every "
 							+ LeaderboardTracker.SNAPSHOT_INTERVAL_DAYS + " in-game days."),
 					false
 			);
@@ -61,7 +61,7 @@ public final class LeaderboardCommands {
 		// Say plainly that this is a snapshot and what it can't see, so a
 		// player whose chest hoard is missing knows that's intended.
 		context.getSource().sendSuccess(
-				() -> Component.literal("Vault + carried potatoes. Updates every "
+				() -> Component.literal("Vault + carried Shards. Updates every "
 						+ LeaderboardTracker.SNAPSHOT_INTERVAL_DAYS + " in-game days; chests aren't counted.")
 						.withStyle(ChatFormatting.DARK_GRAY),
 				false

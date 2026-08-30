@@ -28,6 +28,8 @@ import com.pisomarket.shop.system.ShopCatalog;
 import com.pisomarket.shop.system.ShopCommands;
 import com.pisomarket.shop.system.ShopEntry;
 
+import com.pisomarket.economy.PisoCurrency;
+
 // Chest-style menu for the shop block (see CLAUDE.md "Shop UI"). One
 // AbstractContainerMenu instance, three "screens" swapped in place by
 // repopulating the same 27-slot content grid — simpler and more robust
@@ -252,7 +254,7 @@ public class PisoShopMenu extends AbstractContainerMenu {
 
 	private void refreshVaultDisplay() {
 		long balance = owner.level().getServer().getDataStorage().computeIfAbsent(com.pisomarket.economy.PisoVault.TYPE).getBalance(owner.getUUID());
-		long held = owner.getInventory().countItem(Items.POISONOUS_POTATO);
+		long held = owner.getInventory().countItem(PisoCurrency.SUNSTONE_SHARD);
 		content.setItem(VAULT_BALANCE_DISPLAY, icon(PisoUiItems.BALANCE, "Balance: " + balance + "  (carrying " + held + ")"));
 		content.setItem(VAULT_AMOUNT_DISPLAY, icon(PisoUiItems.AMOUNT, "Amount: " + withdrawAmount));
 	}
@@ -458,7 +460,7 @@ public class PisoShopMenu extends AbstractContainerMenu {
 		}
 
 		if (slotId == VAULT_DEPOSIT_ALL) {
-			depositFromInventory(player, owner.getInventory().countItem(Items.POISONOUS_POTATO));
+			depositFromInventory(player, owner.getInventory().countItem(PisoCurrency.SUNSTONE_SHARD));
 			return;
 		}
 
@@ -475,7 +477,7 @@ public class PisoShopMenu extends AbstractContainerMenu {
 			long remaining = withdrawAmount;
 			while (remaining > 0) {
 				int chunk = (int) Math.min(remaining, 64);
-				ItemStack given = new ItemStack(Items.POISONOUS_POTATO, chunk);
+				ItemStack given = new ItemStack(PisoCurrency.SUNSTONE_SHARD, chunk);
 				if (!com.pisomarket.util.InventoryUtil.giveItem(player, given)) {
 					break;
 				}
@@ -506,7 +508,7 @@ public class PisoShopMenu extends AbstractContainerMenu {
 	// the /deposit command was removed so the Shop block is a place players
 	// actually have to visit.
 	private void depositFromInventory(final ServerPlayer player, final long requested) {
-		long held = player.getInventory().countItem(Items.POISONOUS_POTATO);
+		long held = player.getInventory().countItem(PisoCurrency.SUNSTONE_SHARD);
 		long amount = Math.min(held, requested);
 		if (amount <= 0) {
 			player.sendSystemMessage(Component.literal("You aren't carrying any Poisonous Potato"));
@@ -527,7 +529,7 @@ public class PisoShopMenu extends AbstractContainerMenu {
 		var inventory = player.getInventory();
 		for (int i = 0; i < inventory.getContainerSize() && remaining > 0; i++) {
 			ItemStack stack = inventory.getItem(i);
-			if (stack.getItem() == Items.POISONOUS_POTATO) {
+			if (stack.getItem() == PisoCurrency.SUNSTONE_SHARD) {
 				int take = (int) Math.min(remaining, stack.getCount());
 				stack.shrink(take);
 				remaining -= take;

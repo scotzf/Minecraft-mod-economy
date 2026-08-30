@@ -13,6 +13,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Items;
 
+import com.pisomarket.economy.PisoCurrency;
+
 // Keeps the wealth leaderboard up to date. See PisoLeaderboard for why this
 // is a periodic snapshot rather than a live ranking.
 //
@@ -85,8 +87,8 @@ public final class LeaderboardTracker {
 	// storage, so money kept there is still plainly theirs. Ordinary chests
 	// are NOT counted and cannot be — see PisoLeaderboard.
 	private static long countCarried(final ServerPlayer player) {
-		return (long) player.getInventory().countItem(Items.POISONOUS_POTATO)
-				+ player.getEnderChestInventory().countItem(Items.POISONOUS_POTATO);
+		return (long) player.getInventory().countItem(PisoCurrency.SUNSTONE_SHARD)
+				+ player.getEnderChestInventory().countItem(PisoCurrency.SUNSTONE_SHARD);
 	}
 
 	private static void publish(final MinecraftServer server, final PisoLeaderboard board, final int today) {
@@ -138,7 +140,7 @@ public final class LeaderboardTracker {
 		}
 
 		server.getPlayerList().broadcastSystemMessage(
-				Component.literal("Richest players updated — /top to see the board. Leader: "
+				Component.literal("Richest players updated — /leaderboard to see the board. Leader: "
 						+ ranked.get(0).name() + " (" + ranked.get(0).total() + ")"),
 				false
 		);

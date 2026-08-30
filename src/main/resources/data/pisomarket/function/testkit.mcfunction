@@ -37,10 +37,12 @@ give @s pisomarket:bulwark_helmet[enchantments={"minecraft:protection":5,"minecr
 give @s pisomarket:bulwark_chestplate[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
 give @s pisomarket:bulwark_leggings[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
 give @s pisomarket:bulwark_boots[enchantments={"minecraft:protection":5,"minecraft:feather_falling":4,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
-# Currency — enough poisonous potatoes to test the Shop block's Vault tab
-give @s poisonous_potato 64
-# The Shop block itself — deposit/withdraw only works through this (see
-# CLAUDE.md's "Interface: the Shop block is the real thing, still")
+# Currency — Sunstone Shards, for /deposit and shop testing
+give @s pisomarket:sunstone_shard 64
+# Waypoint block, for /warp testing
+give @s pisomarket:waypoint 2
+# The Shop block (its UI still works; /deposit and /withdraw are now
+# commands too, so the block is no longer the only way to reach the vault)
 give @s pisomarket:shop
 # Harvest boosters, normally only reachable via the shop
 give @s pisomarket:harvest_potion_i

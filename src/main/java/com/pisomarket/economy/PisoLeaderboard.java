@@ -37,7 +37,10 @@ import com.pisomarket.PisoMarket;
 // openly a little stale reads as intended behaviour, where a "live" board
 // that quietly missed chest contents would just look broken.
 public class PisoLeaderboard extends SavedData {
-	public static final int TOP_N = 10;
+	// Narrowed from 10 to 3 for v2: the board is broadcast to everyone
+	// every 2 in-game days, and a 10-line wall of chat every 40 real
+	// minutes is noise rather than information.
+	public static final int TOP_N = 3;
 
 	public record Entry(UUID player, String name, long total) {
 		public static final Codec<Entry> CODEC = RecordCodecBuilder.create(

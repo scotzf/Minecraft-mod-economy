@@ -44,5 +44,8 @@
 	"item.pisomarket.sentinel_helmet": "Sentinel Helmet",
 	"item.pisomarket.sentinel_chestplate": "Sentinel Chestplate",
 	"item.pisomarket.sentinel_leggings": "Sentinel Leggings",
-	"item.pisomarket.sentinel_boots": "Sentinel Boots"
+	"item.pisomarket.sentinel_boots": "Sentinel Boots",
+	"item.pisomarket.sunstone_shard": "Sunstone Shard",
+	"block.pisomarket.waypoint": "Waypoint",
+	"item.pisomarket.waypoint": "Waypoint"
 }
