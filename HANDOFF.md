@@ -14,41 +14,47 @@ Roughly 5,000 lines of Java: vault currency, player market, system shop,
 territory claims with rent, lockable chests, anti-grief mixins, wealth
 leaderboard. A working `pisomarket-1.0.0.jar` exists in `for-tlauncher/`.
 
-**The immediate task: `pisomarket:frostblade` has never been compiled.**
-
-Nothing in `com.pisomarket.combat` has been through a compiler. These 26.2 API
-names were written from patterns in the surrounding code and are **not
-verified**:
+**Update 2026-08-30 (Windows machine): it compiles.** `./gradlew build`
+succeeded on the first try after installing JDK 25 — every guessed 26.2 API
+name below turned out correct as written. `com/pisomarket/combat/*.class`
+confirmed present in the built jar, and a headless `runServer` load shows
+`(pisomarket) Piso Market initialized` with no mixin/registration errors.
 
 - `ToolMaterial.IRON`
 - `Item.Properties.sword(material, damage, speed)`
-- `hurtEnemy(ItemStack, LivingEntity, LivingEntity)` — signature and whether
-  overriding it is still correct
+- `hurtEnemy(ItemStack, LivingEntity, LivingEntity)`
 - `LivingEntity.igniteForSeconds(int)`
 - `MobEffects.SLOWNESS` / `MobEffects.POISON`
 
-`CLAUDE.md` has a mappings table and a "Reading failures" section. Decompile
-with `./gradlew genSources` and grep rather than trusting a remembered
-snippet — that advice is in the doc because guessing has cost real time here
-before.
-
-**First job: build it, fix the first error only (the rest are usually
-cascade), repeat.**
+**Not yet done: the `runClient` visual check.** Compiling proves the code is
+type-correct, not that the model/texture look right in game. Still need a
+human at the screen to confirm Frostblade renders correctly in hand, in
+inventory, and on the ground, and that Slowness actually applies on hit —
+see "Testing" below.
 
 ---
 
 ## Environment facts
 
-- Work was done on **Kali Linux**; the user is moving to **Windows**.
+- Work was done on **Kali Linux**, then continued on **Windows** (current
+  machine).
 - `build.gradle` now uses a **Java toolchain** (`JavaLanguageVersion.of(25)`).
   The old hardcoded `org.gradle.java.home` was deliberately deleted — it was
   wrong on two machines in a row. Do not reintroduce it.
 - Needs a **JDK 25, not a JRE**. A JRE has no compiler; that is exactly what
-  blocked the build on Linux.
-- On Linux `./gradlew` was not executable — `sh gradlew` worked.
-- **Two commits are local and unpushed.** `git push` failed here: no stored
-  credentials and no `gh` CLI. The user has the code as a zip and a git
-  bundle.
+  blocked the build on Linux, and this Windows machine's system default was
+  also a JRE (1.8) — installed via `winget install
+  EclipseAdoptium.Temurin.25.JDK`, landed at
+  `C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot`.
+- On Linux `./gradlew` was not executable — `sh gradlew` worked. On Windows,
+  Gradle's own launcher also needs `JAVA_HOME` pointed at the JDK 25 install
+  (the system default `java` is still 1.8) — `org.gradle.java.home` stays
+  deleted per above, so export `JAVA_HOME` in the shell instead of hardcoding
+  it in `gradle.properties`.
+- The three Kali-Linux commits (Frostblade scaffolding) were carried over via
+  a git bundle + zip, merged into `main` (fast-forward, no conflicts), and
+  pushed to the `master` remote. The bundle and zip have been deleted since
+  their content is now in git history.
 - **The GitHub repo `scotzf/Minecraft-mod-economy` is public.**
 
 ---
@@ -126,9 +132,11 @@ pisomarket:frostblade`.
 
 ## Suggested first moves
 
-1. Install JDK 25, build, fix mapping errors until it compiles.
+1. ~~Install JDK 25, build, fix mapping errors until it compiles.~~ Done
+   2026-08-30 — builds clean, no fixes needed.
 2. `runClient`, confirm Frostblade renders correctly in hand, in inventory,
-   on the ground, and that Slowness applies on hit.
+   on the ground, and that Slowness applies on hit. **Next step — not yet
+   done.**
 3. If it looks right, import the remaining 14 weapons — the procedure is in
    `CLAUDE.md` under "Custom weapons — current state".
 4. Then implement Lifesteal and Smite.
