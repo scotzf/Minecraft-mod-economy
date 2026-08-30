@@ -1307,6 +1307,115 @@ already exists for shop restocks (`ShopEntry.restockDays` /
 `PisoShopStock`), this reuses the same idea on a fixed 2-day interval
 instead of per-item.
 
+### 8b. Mob drops — Shards and weapons (designed 2026-08-31, NOT BUILT)
+
+Mobs become the second faucet alongside farming, and the **only** source
+of custom weapons outside the shop. Nothing in this section exists in code
+yet.
+
+#### Three safeguards that are load-bearing, not optional
+
+These exist because without them the whole table is an infinite money
+loop. Build them at the same time as the drops, not after.
+
+1. **Player-kill only.** The drop fires only when a player lands the
+   killing blow — not fall damage, not suffocation, not an iron golem,
+   not a wolf. This is the exact same rule `HarvestFaucet` already uses
+   for crops (`PlayerBlockBreakEvents`, player-break only), and for the
+   same reason: it makes classic AFK mob-grinder farms mint nothing.
+2. **Player-buildable mobs drop NOTHING.** Iron Golem and Snow Golem are
+   craftable from blocks, so any drop on them is a literal
+   iron-for-money printer. Zero shards, zero weapons, no exceptions.
+3. **Passive mobs drop nothing.** Cows, pigs, sheep, chickens breed
+   infinitely and cost nothing to kill.
+
+#### Boss drops
+
+| Boss | Weapon roll | Shards |
+|---|---|---|
+| **Warden** | **100%** — one of {Soul Devourer, Soul Collector} | 10,000 |
+| **Ender Dragon** | 50% — one of {Divine Axe Rhitta, Abominable Scythe}; **plus** 5% — one of {Soul Collector, Soul Devourer} | 5,000 |
+| **Wither** | 40% — one of {Divine Reaper, Abominable Greatsaber}; plus 3% Tier 1 | 3,000 |
+
+**Repeatability warning, flagged not solved.** Wither and Ender Dragon
+are both re-summonable, so those payouts are farmable in principle. The
+gates are real but finite: a Wither costs ~120 wither skeleton kills
+(3 skulls at ~2.5%), a dragon respawn costs 4 end crystals. The Warden
+is not summonable but *can* be farmed in a deep dark by a strong enough
+player. If any of these three turns out to be the dominant income source
+in practice, the fix is a per-player cooldown on the boss payout rather
+than nerfing the drop.
+
+#### Rare and structure-gated mobs
+
+| Mob | Weapon roll | Shards |
+|---|---|---|
+| Elder Guardian | 15% Tier 2 | 500 |
+| Ravager | 10% Tier 3 | 300 |
+| Evoker | 8% Tier 3 | 100 |
+| Piglin Brute | 5% Tier 4 | 80 |
+| Breeze | 5% Tier 3 | 60 |
+| Shulker | — | 60 |
+| Guardian | 3% Tier 4 | 40 |
+| Vindicator / Pillager / Illusioner | — | 30 |
+| **Iron Golem / Snow Golem** | **none** | **none** (safeguard 2) |
+
+#### Uncommon mobs
+
+| Mob | Chance | Shards on hit |
+|---|---|---|
+| Witch | 20% | 1-3 |
+| Enderman | 20% | 1-3 |
+| Blaze | 15% | 1-2 |
+| Wither Skeleton | 15% | 1-2 |
+| Ghast | 15% | 1-2 |
+| Hoglin / Zoglin | 12% | 1-2 |
+| Phantom / Piglin / Slime / Magma Cube / Cave Spider / Stray / Bogged / Husk / Drowned | 10% | 1 |
+
+#### Common mobs
+
+| Mob | Chance | Shards |
+|---|---|---|
+| Zombie / Zombie Villager / Skeleton / Creeper / Spider / Silverfish / Endermite | 5% | 1 |
+
+#### The farming-vs-grinding tension, stated plainly
+
+At 5% per common mob and ~100 kills/hour, mob grinding yields ~5
+shards/hour. A 9x9 carrot plot yields ~2 shards per 40-60 minute cycle,
+so roughly 2-3/hour. **Mob grinding is therefore ~2x more lucrative than
+farming**, which inverts the original design where farming was the single
+faucet. That is a deliberate consequence of adding mob drops at all, but
+if farming should stay the primary path, common-mob rates want to come
+down to ~2-3% rather than farming rates going up (raising farming rates
+re-prices the entire shop).
+
+### 8c. Potions — rework from farming-only to all-activity
+
+**Current behaviour (built):** `HarvestFaucet.HARVEST_BOOST_I/_II` add a
+flat +1.5 / +4 percentage points, and only ever apply to breaking a
+mature potato. `HARVEST_LUCK` doubles a successful farm payout.
+
+**New design (not built):** both potions apply to **every** Shard source
+— farming *and* mob kills — and the boost becomes a **percentage of the
+base rate** rather than a flat addition.
+
+| Potion | Effect |
+|---|---|
+| Harvest Potion I | +50% relative Shard drop chance, all sources |
+| Harvest Potion II | +150% relative Shard drop chance, all sources |
+| Potion of Luck | Doubles Shard payout on a successful roll, all sources |
+
+**Why relative and not flat:** a flat +1.5 points is huge on a 2.5% crop
+(+60% relative) and nearly meaningless on a 10% nether wart (+15%
+relative) or a 20% Enderman. Once rates vary from 2.5% to 20% across
+sources, only a multiplier keeps the potion feeling like the same item
+everywhere.
+
+**Names are now wrong and should change** — "Harvest" no longer describes
+something that buffs mob kills. Suggested: *Fortune Potion* / *Greater
+Fortune Potion*, keeping *Potion of Luck*. Not renamed yet; flag if you
+want different names before this gets built.
+
 ### 9. Level system — new
 
 **Stats: Attack, Defense, Speed, Luck.** Luck doubles into §1's crop drop
