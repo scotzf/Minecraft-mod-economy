@@ -47,17 +47,3 @@ replay_*.log
 src/main/resources/assets/pisomarket/models/item/divineaxerhitta.json
 src/main/resources/assets/pisomarket/items/divineaxerhitta.json
 src/main/resources/assets/pisomarket/textures/item/divine_axe_rhitta.png
-
-# Same situation, different source: CarroRateXMods armor retexture pack.
-# Zero license/credit file in the pack at all — not even ARR, just
-# unknown. Approved for private local use only (this machine + one
-# friend), explicitly not for the public repo. WingedBootsContent.java
-# still registers all three winged boots items and points at these paths,
-# so a fresh clone compiles and runs — the boots just render as the
-# missing-texture placeholder until these six files exist locally again.
-src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid/winged_diamond.png
-src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid/winged_netherite.png
-src/main/resources/assets/pisomarket/textures/entity/equipment/humanoid/winged_gold.png
-src/main/resources/assets/pisomarket/textures/item/winged_boots_diamond.png
-src/main/resources/assets/pisomarket/textures/item/winged_boots_netherite.png
-src/main/resources/assets/pisomarket/textures/item/winged_boots_gold.png

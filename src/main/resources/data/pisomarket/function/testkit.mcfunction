@@ -28,9 +28,5 @@ give @s pisomarket:shop
 give @s pisomarket:harvest_potion_i
 give @s pisomarket:harvest_potion_ii
 give @s pisomarket:luck_potion
-# Winged boots — real 3D wings + CarroRateXMods diamond/netherite/gold art
-give @s pisomarket:winged_boots_diamond
-give @s pisomarket:winged_boots_netherite
-give @s pisomarket:winged_boots_gold
 # Vault balance to buy BlackMarket deeds, system shop stock, and pay rent
 eco set @s 500000

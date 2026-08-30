@@ -2,17 +2,12 @@ package com.pisomarket.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback;
-import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraft.client.model.geom.ModelLayerLocation;
-import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -27,9 +22,6 @@ import com.pisomarket.shop.PisoShopContent;
 public class PisoMarketClient implements ClientModInitializer {
 	private static final Identifier POTATO_BALANCE_HUD =
 			Identifier.fromNamespaceAndPath(PisoMarket.MOD_ID, "potato_balance");
-
-	private static final ModelLayerLocation WINGED_BOOTS_LAYER =
-			new ModelLayerLocation(Identifier.fromNamespaceAndPath(PisoMarket.MOD_ID, "winged_boots"), "wings");
 
 	// The HUD shows vault balance, not held inventory count — the vault is
 	// server-only data (PisoVault, a SavedData), so it has to be pushed
@@ -46,13 +38,6 @@ public class PisoMarketClient implements ClientModInitializer {
 		ClientPlayNetworking.registerGlobalReceiver(
 				VaultBalancePayload.TYPE, (payload, context) -> cachedBalance = payload.balance()
 		);
-
-		ModelLayerRegistry.registerModelLayer(WINGED_BOOTS_LAYER, WingedBootsLayer::createLayer);
-		LivingEntityRenderLayerRegistrationCallback.EVENT.register((entityType, entityRenderer, registrationHelper, context) -> {
-			if (entityType == EntityTypes.PLAYER && entityRenderer instanceof AvatarRenderer<?> avatarRenderer) {
-				registrationHelper.register(new WingedBootsLayer(avatarRenderer, context.bakeLayer(WINGED_BOOTS_LAYER)));
-			}
-		});
 	}
 
 	private static void renderPotatoBalance(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
