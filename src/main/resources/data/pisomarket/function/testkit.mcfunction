@@ -19,19 +19,25 @@ give @s pisomarket:soul_collector
 give @s pisomarket:divine_justice
 give @s pisomarket:divineaxerhitta
 give @s pisomarket:divine_reaper
-# Custom armor — the toughness-boosted diamond/netherite/gold sets
-give @s pisomarket:custom_diamond_helmet
-give @s pisomarket:custom_diamond_chestplate
-give @s pisomarket:custom_diamond_leggings
-give @s pisomarket:custom_diamond_boots
-give @s pisomarket:custom_netherite_helmet
-give @s pisomarket:custom_netherite_chestplate
-give @s pisomarket:custom_netherite_leggings
-give @s pisomarket:custom_netherite_boots
-give @s pisomarket:custom_gold_helmet
-give @s pisomarket:custom_gold_chestplate
-give @s pisomarket:custom_gold_leggings
-give @s pisomarket:custom_gold_boots
+# Custom armor — Sentinel(gold)/Aegis(diamond)/Bulwark(netherite), each
+# toughness-boosted (see CustomArmorContent.java) and given here fully
+# pre-enchanted via inline component syntax rather than baked into the
+# item itself — enchantments need server registry access, which a static
+# Item.Properties default doesn't have at class-load time. Protection V
+# is intentionally past vanilla's real max (IV) — see CLAUDE.md's combat
+# rebalance notes for why.
+give @s pisomarket:custom_gold_helmet[enchantments={"minecraft:protection":5,"minecraft:respiration":3,"minecraft:aqua_affinity":1,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:custom_gold_chestplate[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:custom_gold_leggings[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:custom_gold_boots[enchantments={"minecraft:protection":5,"minecraft:feather_falling":4,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:custom_diamond_helmet[enchantments={"minecraft:protection":5,"minecraft:respiration":3,"minecraft:aqua_affinity":1,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:custom_diamond_chestplate[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:custom_diamond_leggings[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:custom_diamond_boots[enchantments={"minecraft:protection":5,"minecraft:feather_falling":4,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:custom_netherite_helmet[enchantments={"minecraft:protection":5,"minecraft:respiration":3,"minecraft:aqua_affinity":1,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:custom_netherite_chestplate[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:custom_netherite_leggings[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
+give @s pisomarket:custom_netherite_boots[enchantments={"minecraft:protection":5,"minecraft:feather_falling":4,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
 # Currency — enough poisonous potatoes to test the Shop block's Vault tab
 give @s poisonous_potato 64
 # The Shop block itself — deposit/withdraw only works through this (see
