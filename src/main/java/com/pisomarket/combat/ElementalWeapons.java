@@ -96,6 +96,21 @@ public final class ElementalWeapons {
 		return item;
 	}
 
+	// Spear uses the sword profile for its normal left-click swing; the
+	// charged thrust is layered on top by SpearItem itself.
+	private static Item spear(final String path, final Element element, final float damage,
+			final float magnitude, final int durationTicks) {
+		Identifier itemId = id(path);
+		Item item = new SpearItem(
+				element, magnitude, durationTicks, damage,
+				new Item.Properties()
+						.setId(ResourceKey.create(Registries.ITEM, itemId))
+						.sword(ToolMaterial.IRON, damageBaseline(damage), speedBaseline(SWORD_SPEED))
+		);
+		ITEMS.put(itemId, item);
+		return item;
+	}
+
 	private static float damageBaseline(final float finalDamage) {
 		return finalDamage - PLAYER_BASE_DAMAGE - IRON_DAMAGE_BONUS;
 	}
@@ -127,11 +142,11 @@ public final class ElementalWeapons {
 	public static final Item ABOMINABLEGREATSABER =
 			heavy("abominablegreatsaber", Element.VENOM, 38.0F, 0.0F, 6 * SECONDS, CLEAVE);
 
-	// --- Tier 3. Divine Justice sits at the 30 floor; its charge/spear
-	// mechanic is NOT implemented yet (see CLAUDE.md's open questions), so
-	// today it is simply a fast Smite sword.
-	public static final Item DIVINE_JUSTICE =
-			sword("divine_justice", Element.SMITE, 30.0F, SWORD_SPEED, 6.0F, 0, NO_CLEAVE);
+	// --- Tier 3. Divine Justice is the spear: hold right-click to wind up,
+	// release to thrust for scaling damage and reach (see SpearItem).
+	// Left-click still swings normally at the stats below, so it is never
+	// useless in a close scramble.
+	public static final Item DIVINE_JUSTICE = spear("divine_justice", Element.SMITE, 30.0F, 6.0F, 0);
 	public static final Item FROSTSCYTHE =
 			sword("frostscythe", Element.FROST, 39.0F, SCYTHE_SPEED, 0.0F, 3 * SECONDS, NO_CLEAVE);
 	public static final Item MOLTENBLADE =

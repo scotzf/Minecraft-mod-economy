@@ -3,7 +3,10 @@ package com.pisomarket.combat;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -83,6 +86,20 @@ public class ElementalBladeItem extends Item {
 		List<LivingEntity> nearby = level.getEntitiesOfClass(LivingEntity.class, area);
 		float cleaveDamage = this.baseDamage * CLEAVE_DAMAGE_FRACTION;
 
+		// Vanilla's own sweep arc + sound, so a cleave reads visually the
+		// same way a vanilla sword sweep does instead of damage silently
+		// appearing on nearby mobs. Spawned from the ATTACKER facing
+		// forward, matching how Player.sweepAttack positions it.
+		double dx = -Mth.sin(attacker.getYRot() * (float) (Math.PI / 180.0));
+		double dz = Mth.cos(attacker.getYRot() * (float) (Math.PI / 180.0));
+		level.sendParticles(
+				ParticleTypes.SWEEP_ATTACK,
+				attacker.getX() + dx, attacker.getY(0.5), attacker.getZ() + dz,
+				0, dx, 0.0, dz, 0.0
+		);
+		level.playSound(null, attacker.getX(), attacker.getY(), attacker.getZ(),
+				SoundEvents.PLAYER_ATTACK_SWEEP, attacker.getSoundSource(), 1.0F, 1.0F);
+
 		for (LivingEntity other : nearby) {
 			// Never the attacker (cleaving yourself), never the primary
 			// target (it already took a full hit), and never a teammate.
@@ -99,5 +116,15 @@ public class ElementalBladeItem extends Item {
 
 	public Element element() {
 		return this.element;
+	}
+
+	// Exposed so SpearItem can apply the same on-hit effect through its own
+	// thrust path instead of duplicating the magnitude/duration numbers.
+	protected float effectMagnitudeValue() {
+		return this.effectMagnitude;
+	}
+
+	protected int effectDurationValue() {
+		return this.effectDurationTicks;
 	}
 }
