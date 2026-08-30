@@ -50,6 +50,7 @@ public final class PisoCreativeTabs {
 			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.DIVINE_JUSTICE), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
 			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.DIVINEAXERHITTA), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
 			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.DIVINE_REAPER), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.WingedBootsContent.WINGED_BOOTS), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
 		});
 
 		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(output -> {

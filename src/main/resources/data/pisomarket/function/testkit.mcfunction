@@ -4,17 +4,16 @@
 # hand. Requires permission level 2 (same gate as /eco) since it calls
 # /eco give on the caller.
 #
-# Weapons
+# Weapons (13 — Hearthflame and Soul Edge were removed 2026-08-30, not a
+# missed update, don't re-add them here)
 give @s pisomarket:moltensword
 give @s pisomarket:moltenblade
-give @s pisomarket:hearthflame
 give @s pisomarket:frostblade
 give @s pisomarket:frostaxe
 give @s pisomarket:frostscythe
 give @s pisomarket:abominableblade
 give @s pisomarket:abominablegreatsaber
 give @s pisomarket:abominablescythe
-give @s pisomarket:souledge
 give @s pisomarket:soul_devourer
 give @s pisomarket:soul_collector
 give @s pisomarket:divine_justice
@@ -29,5 +28,7 @@ give @s pisomarket:shop
 give @s pisomarket:harvest_potion_i
 give @s pisomarket:harvest_potion_ii
 give @s pisomarket:luck_potion
+# First-pass winged boots (real 3D wings, unverified in game yet)
+give @s pisomarket:winged_boots
 # Vault balance to buy BlackMarket deeds, system shop stock, and pay rent
 eco set @s 500000
