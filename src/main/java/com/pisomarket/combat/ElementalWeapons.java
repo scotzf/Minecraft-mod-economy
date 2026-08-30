@@ -4,10 +4,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import net.minecraft.core.Registry;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.util.Unit;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ToolMaterial;
 
@@ -70,14 +72,23 @@ public final class ElementalWeapons {
 	// Sword and Scythe both use vanilla's sword profile — Minecraft has no
 	// scythe tool type. They differ in the damage/speed numbers passed in,
 	// which is the whole of the shape distinction.
+	// Every custom weapon is UNBREAKABLE. They are rare drops, not
+	// craftable consumables, so durability would only mean losing one
+	// permanently to attrition. This also makes ToolMaterial.IRON's low
+	// 250 durability irrelevant — the material now only supplies the +2.0
+	// damage bonus that damageBaseline() already accounts for.
+	private static Item.Properties base(final Identifier itemId) {
+		return new Item.Properties()
+				.setId(ResourceKey.create(Registries.ITEM, itemId))
+				.component(DataComponents.UNBREAKABLE, Unit.INSTANCE);
+	}
+
 	private static Item sword(final String path, final Element element, final float damage, final float speed,
 			final float magnitude, final int durationTicks, final boolean cleave) {
 		Identifier itemId = id(path);
 		Item item = new ElementalBladeItem(
 				element, magnitude, durationTicks, NO_CRIT, 1.0F, cleave, damage,
-				new Item.Properties()
-						.setId(ResourceKey.create(Registries.ITEM, itemId))
-						.sword(ToolMaterial.IRON, damageBaseline(damage), speedBaseline(speed))
+				base(itemId).sword(ToolMaterial.IRON, damageBaseline(damage), speedBaseline(speed))
 		);
 		ITEMS.put(itemId, item);
 		return item;
@@ -88,24 +99,7 @@ public final class ElementalWeapons {
 		Identifier itemId = id(path);
 		Item item = new ElementalBladeItem(
 				element, magnitude, durationTicks, HEAVY_CRIT_CHANCE, HEAVY_CRIT_MULTIPLIER, cleave, damage,
-				new Item.Properties()
-						.setId(ResourceKey.create(Registries.ITEM, itemId))
-						.axe(ToolMaterial.IRON, damageBaseline(damage), speedBaseline(HEAVY_SPEED))
-		);
-		ITEMS.put(itemId, item);
-		return item;
-	}
-
-	// Spear uses the sword profile for its normal left-click swing; the
-	// charged thrust is layered on top by SpearItem itself.
-	private static Item spear(final String path, final Element element, final float damage,
-			final float magnitude, final int durationTicks) {
-		Identifier itemId = id(path);
-		Item item = new SpearItem(
-				element, magnitude, durationTicks, damage,
-				new Item.Properties()
-						.setId(ResourceKey.create(Registries.ITEM, itemId))
-						.sword(ToolMaterial.IRON, damageBaseline(damage), speedBaseline(SWORD_SPEED))
+				base(itemId).axe(ToolMaterial.IRON, damageBaseline(damage), speedBaseline(HEAVY_SPEED))
 		);
 		ITEMS.put(itemId, item);
 		return item;
@@ -142,11 +136,8 @@ public final class ElementalWeapons {
 	public static final Item ABOMINABLEGREATSABER =
 			heavy("abominablegreatsaber", Element.VENOM, 38.0F, 0.0F, 6 * SECONDS, CLEAVE);
 
-	// --- Tier 3. Divine Justice is the spear: hold right-click to wind up,
-	// release to thrust for scaling damage and reach (see SpearItem).
-	// Left-click still swings normally at the stats below, so it is never
-	// useless in a close scramble.
-	public static final Item DIVINE_JUSTICE = spear("divine_justice", Element.SMITE, 30.0F, 6.0F, 0);
+	// --- Tier 3. Divine Justice was removed 2026-08-31 along with its
+	// SpearItem class — recoverable from git history if a spear comes back.
 	public static final Item FROSTSCYTHE =
 			sword("frostscythe", Element.FROST, 39.0F, SCYTHE_SPEED, 0.0F, 3 * SECONDS, NO_CLEAVE);
 	public static final Item MOLTENBLADE =

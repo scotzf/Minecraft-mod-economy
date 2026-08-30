@@ -118,8 +118,10 @@ public class ElementalBladeItem extends Item {
 		return this.element;
 	}
 
-	// Exposed so SpearItem can apply the same on-hit effect through its own
-	// thrust path instead of duplicating the magnitude/duration numbers.
+	// Kept for any subclass that needs to apply this weapon's on-hit effect
+	// through its own attack path rather than the normal swing. Nothing
+	// uses these right now — SpearItem did, and was removed with Divine
+	// Justice on 2026-08-31.
 	protected float effectMagnitudeValue() {
 		return this.effectMagnitude;
 	}

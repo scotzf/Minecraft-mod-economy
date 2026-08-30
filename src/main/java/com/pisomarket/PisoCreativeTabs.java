@@ -45,7 +45,6 @@ public final class PisoCreativeTabs {
 			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.ABOMINABLESCYTHE), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
 			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.SOUL_DEVOURER), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
 			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.SOUL_COLLECTOR), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
-			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.DIVINE_JUSTICE), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
 			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.DIVINEAXERHITTA), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
 			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.DIVINE_REAPER), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
 			for (net.minecraft.world.item.equipment.ArmorType type : new net.minecraft.world.item.equipment.ArmorType[] {

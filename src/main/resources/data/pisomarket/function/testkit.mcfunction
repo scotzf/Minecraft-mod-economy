@@ -16,7 +16,6 @@ give @s pisomarket:abominablegreatsaber
 give @s pisomarket:abominablescythe
 give @s pisomarket:soul_devourer
 give @s pisomarket:soul_collector
-give @s pisomarket:divine_justice
 give @s pisomarket:divineaxerhitta
 give @s pisomarket:divine_reaper
 # Custom armor — Sentinel(gold)/Aegis(diamond)/Bulwark(netherite), each
