@@ -1132,15 +1132,162 @@ block or item today; chest access is already the claim-wide `ChestAccess`
 setting edited from the Land Deed book (see "Lockable chests" above,
 corrected earlier this session). Confirmed, not a new task.
 
-### 6. Combat — baseline confirmed, unchanged
+### 6. Combat — FULL REBALANCE SPEC (designed 2026-08-31, NOT YET BUILT)
 
-The 15-weapon set and its numbers (Molten/Ignite, Frost/Slowness,
-Blight/Poison, Soul/Lifesteal, Divine/Smite; Sword and Reach columns at
-vanilla iron sword stats 3.0/-2.4, Heavy column at vanilla iron axe stats
-6.0/-3.1) stay as built — see "Custom weapons — current state" above for
-the full table. The only change combat gets in this redesign is becoming
-purchasable (§3 Tier 4) and interacting with the new Attack/Defense/Speed/
-Luck stats from the level system (§9) once that scaling is decided.
+**Status: the armor half is built and shipped. The weapon half is not.**
+`CustomArmorContent.java` exists and matches this spec. `ElementalWeapons
+.java` still carries the OLD iron-tier stats (3.0/-2.4 sword, 6.0/-3.1
+axe) — every weapon number below is design only. Do not read the table
+below as describing current in-game behavior.
+
+This section supersedes the old "iron tier, never diamond, the effect is
+the reason to carry one" rule from "Custom weapons — current state"
+above. That rule is **reversed**: custom weapons are now deliberately
+*stronger* than diamond, and the counterweight is that only the three
+custom armor sets can survive them.
+
+#### The damage math this is all built on (verified, not assumed)
+
+Decompiled from `CombatRules`. Both steps matter and they compose:
+
+```
+tf         = 2 + toughness/4
+realArmor  = clamp(armor - dmg/tf, armor*0.2, 20)
+afterArmor = dmg * (1 - realArmor/25)
+afterProt  = afterArmor * (1 - clamp(protPoints,0,20)/25)
+```
+
+Two findings that drove every number here:
+
+- **Armor points cap at 20 / 80% reduction.** Vanilla diamond and
+  netherite already sit at exactly 20. Giving custom armor *more armor
+  points would do literally nothing.* Toughness has no cap — that's why
+  the custom sets boost toughness and nothing else.
+- **Protection is 1 point per level per piece, total clamped at 20.**
+  So Protection V x 4 pieces = 20 = the cap exactly. **Protection VI
+  would be wasted**; V is precisely the maximum useful value, which is
+  why the sets use V and not something higher.
+
+#### Shape identity — the three weapon classes
+
+Tuned so all three land at ~46-48 DPS but feel completely different.
+This is the Tier 2 baseline; tier multipliers scale it.
+
+| Shape | Dmg | Speed | Crit | DPS | Feel |
+|---|---|---|---|---|---|
+| Sword | 30 | 1.6/s | — | 48.0 | fast, consistent |
+| Heavy (axe) | 40 | 1.0/s | 30% @ 1.5x (60 on crit) | 46.0 | slow, spiky |
+| Scythe (reach) | 44 | 1.05/s | — | 46.2 | slow, huge per hit |
+
+Tier multipliers: **T1 Souls 0.92, T2 1.00, T3 0.88, T4 0.78.**
+
+**Crit is a new flat percentage chance on every swing**, NOT vanilla's
+fall-attack crit. Vanilla's only triggers while falling and not
+sprinting, which most players never notice — a flat roll (same shape as
+`Element.onHit`'s existing procs) makes the axe's identity always-live.
+
+**Hard floor: every weapon except the Frost and Molten lines deals >= 30.**
+That is exactly what 2-hits a buffed Enderman (60 HP) — the binding
+constraint. Witch (40 buffed) falls out of it for free.
+
+#### The weapon table
+
+| Tier | Weapon | Shape | Dmg | Spd | Effect | Cleave |
+|---|---|---|---|---|---|---|
+| 1 | Soul Collector | Scythe | 40 | 1.05 | Lifesteal 4 HP | — |
+| 1 | Soul Devourer | Heavy | 37 | 1.0 | Lifesteal 3 HP | yes |
+| 2 | Divine Reaper | Scythe | 44 | 1.05 | Smite +6 | — |
+| 2 | Divine Axe Rhitta | Heavy | 40 | 1.0 | **Smite +25** | — |
+| 2 | Abominable Scythe | Scythe | 42 | 1.05 | Poison 6s | — |
+| 2 | Abominable Greatsaber | Heavy | 38 | 1.0 | Poison 6s | yes |
+| 3 | Divine Justice | Spear | 30 | 1.6 | Smite +6, charge attack | — |
+| 3 | Frost Scythe | Scythe | 39 | 1.05 | Slowness 3s | — |
+| 3 | Molten Blade | Heavy | 35 | 1.0 | Ignite 5s | yes |
+| 3 | Frostblade | Sword | 24 | 1.6 | **Slowness 8s** | yes |
+| 4 | Abominable Blade | Sword | 30 | 1.6 | Poison 4s | yes |
+| 4 | Molten Sword | Sword | 23 | 1.6 | Ignite 4s | — |
+| 4 | Frost Axe | Heavy | 31 | 1.0 | Slowness 3s | — |
+
+Design notes baked into that table:
+
+- **Divine Axe Rhitta's Smite +25** is its whole identity: 65 total
+  against undead, which one-shots every common buffed undead (30 HP) and
+  most tanky ones. Against anything not undead it is a plain 40 — the
+  most specialised weapon in the set, deliberately.
+- **Divine > Abominable within Tier 2** on raw damage (44 vs 42, 40 vs
+  38), so Divine stays the PvP pick even though Abominable's poison is
+  the better farming effect.
+- **Frostblade is the deliberate exception**: lowest damage of any
+  non-Molten weapon (24, below Abominable Blade's 30) in exchange for an
+  8-second slow, more than double anyone else's. It is a control weapon,
+  not a damage weapon.
+- **Cleave** (hits multiple targets in an arc) goes to Soul Devourer,
+  Abominable Greatsaber, Molten Blade, Frostblade, Abominable Blade.
+  This is the mob-farming mechanic for everything that isn't Rhitta.
+- Molten Sword and Frost Axe were never named in the boost pass and stay
+  low — flag if the whole Frost/Molten lines should move together.
+
+#### PvP balance — the actual point of all this
+
+Damage taken per hit, computed with the real formula above:
+
+| Armor | vs 30 dmg | vs 44 dmg | Hits to kill (20 HP, vs 44) |
+|---|---|---|---|
+| Vanilla netherite, no enchants | 13.2 | 24.3 | **1** |
+| Vanilla netherite + Protection IV | 4.75 | 8.74 | **3** |
+| Sentinel (gold) + Prot V | 4.96 | 8.03 | 3 |
+| Aegis (diamond) + Prot V | 2.31 | 4.14 | **5** |
+| Bulwark (netherite) + Prot V | 2.00 | 3.48 | **6** |
+
+That is the goal met: **best-case vanilla gear dies in 3 hits, custom
+armor doubles that to 5-6** — and at max level (40 HP) Bulwark reaches
+~12 hits, which is a genuine duel rather than a coin flip. Sentinel
+(gold) lands equal to fully-enchanted vanilla netherite, which makes it
+the honest entry tier rather than a trap.
+
+#### Mob HP — 1.5x across the board
+
+Buffed so the weapons above have something to bite. Warden is 1.3x only;
+it is already terrifying.
+
+| Mob | Vanilla | Buffed | | Mob | Vanilla | Buffed |
+|---|---|---|---|---|---|---|
+| Zombie/Skeleton/Creeper | 20 | 30 | | Piglin Brute | 50 | 75 |
+| Spider | 16 | 24 | | Guardian | 30 | 45 |
+| Cave Spider | 12 | 18 | | Elder Guardian | 80 | 120 |
+| Witch | 26 | 40 | | Ravager / Iron Golem | 100 | 150 |
+| Enderman | 40 | 60 | | Wither | 300 | 450 |
+| Blaze / Wither Skeleton | 20 | 30 | | Ender Dragon | 200 | 300 |
+| Hoglin | 40 | 60 | | Warden | 500 | 650 |
+
+**Mob XP scales with the HP buff** (common hostile 5 -> 8) so farming
+stays worth the extra hits.
+
+#### Player stats per level
+
+**Assumes max level 50 — never explicitly confirmed, verify before
+building.** Cycle: every 5th level grants HP, all other levels alternate
+Attack and Defense.
+
+| Stat | Trigger | Per grant | Total at 50 |
+|---|---|---|---|
+| Max HP | every 5th level (10x) | +2 (1 heart) | **+20 HP** -> 40 HP / 20 hearts |
+| Attack | 20 of the other levels | +0.15 dmg | +3 damage |
+| Defense | 20 of the other levels | +0.2 toughness | +4 toughness |
+
+Attack is deliberately small: the weapons above are already doing the
+heavy lifting, and stacking a large Attack stat on a 44-damage Divine
+Reaper reintroduces the one-shot problem this whole spec exists to
+avoid. Defense grants **toughness, not armor points** — same reason as
+the armor sets, points are capped and already maxed.
+
+#### Still open before this can be built
+
+- Max level 50 confirmed?
+- Divine Justice's spear charge: does normal left-click still swing as a
+  weaker fallback, or is charge-and-release the only attack?
+- Should the full Frost and Molten lines move together, or do Molten
+  Sword (23) and Frost Axe (31) stay behind their line-mates?
 
 ### 7. Anti-grief
 
