@@ -32,11 +32,25 @@ public final class PisoCreativeTabs {
 			output.accept(new ItemStack(com.pisomarket.economy.harvest.HarvestPotionItem.LUCK), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
 		});
 
-		// Sample elemental weapon, in the combat tab so it can be grabbed
-		// for testing without the shop.
-		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.COMBAT).register(output ->
-				output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.FROSTBLADE), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS)
-		);
+		// The full elemental weapon set, in the combat tab so it can be
+		// grabbed for testing without the shop.
+		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.COMBAT).register(output -> {
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.MOLTENSWORD), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.MOLTENBLADE), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.HEARTHFLAME), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.FROSTBLADE), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.FROSTAXE), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.FROSTSCYTHE), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.ABOMINABLEBLADE), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.ABOMINABLEGREATSABER), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.ABOMINABLESCYTHE), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.SOULEDGE), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.SOUL_DEVOURER), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.SOUL_COLLECTOR), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.DIVINE_JUSTICE), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.DIVINEAXERHITTA), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+			output.accept(new ItemStack(com.pisomarket.combat.ElementalWeapons.DIVINE_REAPER), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+		});
 
 		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(output -> {
 			// One entry per deed size, each already carrying its

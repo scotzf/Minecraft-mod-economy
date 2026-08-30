@@ -21,7 +21,7 @@ public class ElementalBladeItem extends Item {
 		// Server side only: applying an effect client-side desyncs the
 		// target's effect list and the status icon flickers.
 		if (!target.level().isClientSide()) {
-			this.element.onHit(target);
+			this.element.onHit(target, attacker);
 		}
 	}
 

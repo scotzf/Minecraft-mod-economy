@@ -38,3 +38,12 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+
+# third-party IP, never pushed to this public repo — see "Custom weapons"
+# licensing note in CLAUDE.md. Kept locally only. ElementalWeapons.java
+# still registers pisomarket:divineaxerhitta, so the mod still compiles
+# and runs on a fresh clone — the item just renders as the missing-texture
+# placeholder until these three files (or a replacement) exist locally.
+src/main/resources/assets/pisomarket/models/item/divineaxerhitta.json
+src/main/resources/assets/pisomarket/items/divineaxerhitta.json
+src/main/resources/assets/pisomarket/textures/item/divine_axe_rhitta.png

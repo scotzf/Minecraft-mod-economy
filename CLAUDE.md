@@ -463,28 +463,28 @@ Runs on a throttled server tick (twice a second), not every tick.
 
 ### Lockable chests
 
-A **Lock**, bought from BlackMarket (not part of the Tier 1-4 cosmetic
-framework — a functional security item, like the Land Deed). Consumed on
-use: right-clicking a chest while standing in your own claim binds that
-specific chest to the claim. Right-clicking your own locked chest with
-another Lock cycles its access level for anyone who **isn't** the claim
-owner — the owner always keeps full access to their own chest regardless of
-lock state, since the point is protecting the contents from other people,
-not from yourself:
+**Decided, reversing the earlier per-item design: there is no Lock item.**
+`ChestAccess` is a **claim-wide setting**, not a per-chest one, edited from
+the Land Deed book alongside trust — nothing to craft, buy, place, or lose
+track of. It applies to every container in the claim at once: chest,
+trapped chest, barrel, hopper, dispenser, dropper, furnace variants,
+brewing stand, and shulker box.
 
-- **Closed** — no one else can open it at all
-- **Put only** — others can deposit items, can't take any out
-- **Put and get** — full access for anyone the claim already trusts
+Four levels, cycled from the deed book (`ChestAccess.next()`):
 
+- **Only me** — no one else can open any container in the claim
+- **Trusted: put only** — trusted players can deposit, can't take anything
+  out (opens a `RestrictedChestMenu`/`RestrictedChestScreen`, a real
+  screen because it replaces the vanilla container UI)
+- **Trusted: put and get** — full access for anyone the claim already trusts
+- **Open to everyone** — no restriction at all
+
+The claim **owner always has full access**, regardless of the setting — the
+point is controlling what other people can do, never locking yourself out.
 This is separate from build (place/destroy) trust — a player can be trusted
-to build on your land without being able to touch your chests.
-
-**Known gap: the Lock item does not exist yet.** `ChestAccess`,
-`RestrictedChestMenu`/`RestrictedChestScreen`, and `ChestAccessGuard` are all
-built and enforce access levels correctly on a chest that already has one,
-but nothing registers an actual `Lock` item — it is in no shop catalog and
-has no texture, so there is currently no way to bind a chest in the first
-place. Whole feature is unreachable in game until that registration exists.
+to build on your land without being able to touch your containers.
+Enforced by `ChestAccessGuard`, hooked on Fabric's `BlockEvents.USE_WITHOUT_ITEM`
+since chests are vanilla blocks, not this mod's own.
 
 ## Death and revive
 
@@ -639,6 +639,16 @@ publishes it to everyone, which is a different act from using it privately.
 If that matters, `git rm` the imported textures and models and keep them
 local, or make the repo private.
 
+**Acted on, 2026-08-30: `pisomarket:divineaxerhitta` (Divine Axe Rhitta,
+part of the Divine line) is exactly this case.** Its model, texture, and
+item-definition JSON are `.gitignore`d and were never pushed — see the
+comment there. It still exists on this machine and is still registered by
+`ElementalWeapons.java`, so it builds and works locally; a fresh clone of
+the repo will just show it as the missing-texture placeholder until those
+three files are supplied locally again. If any of the other 14 weapons turn
+out to share this problem, the same treatment applies: exclude, don't
+delete the registration.
+
 **The weapon set is designed around the pack's own matched families**, not
 around invented elements. This was the key lesson: the artist built coherent
 sets, and picking from one family gives visual consistency for free.
@@ -657,41 +667,70 @@ Notes on that table:
 - **Molten has a hammer, not a scythe, because the pack contains no fire
   scythe.** Letting the available art decide the weapon class is the whole
   point of building the set this way round.
-- **Lifesteal and Smite are not implemented** — `Element` currently covers
-  ignite, slow and poison only.
-- **No bow or crossbow art exists.** The Blades of Majestica pack covers 36
-  base items (swords, axes, picks, hoes, spears, mace) and contains no
-  ranged weapon models — the table above is melee-only for that reason, not
-  by design choice.
+- **Lifesteal and Smite are implemented, confirmed 2026-08-30.** Lifesteal
+  heals the attacker a flat amount (`LivingEntity.heal(float)`). Smite deals
+  a small burst of bonus damage, but only against
+  `EntityTypeTags.SENSITIVE_TO_SMITE` — the same tag vanilla's own Smite
+  enchantment checks — so it is a no-op against anything not undead.
+- **No bow or crossbow art exists.** The Blades of Majestica pack has 119
+  weapon models total (far more than the 36 this doc previously claimed —
+  most are unrelated single fantasy swords, several tied to third-party IP,
+  which is exactly why only these 5 coherent, unlicensed-feeling families
+  were picked), and none of them are ranged — the table above is melee-only
+  for that reason, not by design choice.
 - Everything stays **iron tier**, never diamond. The effect is the reason to
   carry one, never the damage number, so player-enchanted gear still wins a
   straight fight.
 
-**Only one is built so far: `pisomarket:frostblade`.** It was chosen as the
+**All 15 are built, as of 2026-08-30.** Frostblade went first, alone, as the
 sample because it is the only strong candidate with no animated overlay, so
-what renders in game is exactly what was previewed — anything wrong is a real
-bug rather than a preview artefact. It is registered, in the COMBAT creative
-tab, and reachable with `/give @s pisomarket:frostblade`.
+what renders in game is exactly what was previewed — anything wrong would be
+a real bug rather than a preview artefact. Once it compiled clean the other
+14 followed the same procedure in one pass (`ElementalWeapons.java`), copied
+by a small one-off Python script rather than by hand — the model JSONs and
+item definitions are mechanical, and hand-editing 14 of them serially was
+pure risk of a typo. All are registered, in the COMBAT creative tab, and
+reachable with `/give @s pisomarket:<name>` (e.g.
+`pisomarket:divine_reaper`).
 
-**How an import works** (repeat per weapon): copy the model JSON from the
-pack, rewrite its `textures` values from `item/x` to `pisomarket:item/x`,
-copy those PNGs (and any `.png.mcmeta` for animated ones), write an item
-definition in `assets/pisomarket/items/`, add a lang key, register the item.
+**Tool profile note:** Minecraft has no "scythe" tool type, so the Reach
+column uses the same `.sword()` profile as the Sword column — "Reach" is
+the pack's own art category for these models, not a mechanical difference
+implemented here. The Heavy column uses `.axe()` for the heavier feel. See
+the comment block at the top of `ElementalWeapons.java` for the exact
+numbers.
+
+**How an import works** (the procedure the script automated): copy the
+model JSON from the pack, rewrite its `textures` values from `item/x` to
+`pisomarket:item/x`, copy those PNGs (and any `.png.mcmeta` for animated
+ones — none of these 15 are animated), write an item definition in
+`assets/pisomarket/items/`, add a lang key, register the item.
+**Watch for texture-name mismatches**: several of the pack's models don't
+reference a same-named texture (`frostaxe.json` uses `frostscytheaxe.png`;
+`soul_devourer.json` and `soul_collector.json` reference *each other's*
+texture file) — always read the model's own `textures` block rather than
+guessing the PNG name from the model name.
 
 **Compiles clean, confirmed 2026-08-30.** `./gradlew build` succeeded on the
-first try — every 26.2 API name used in `com.pisomarket.combat`
-(`ToolMaterial.IRON`, `Item.Properties.sword()`, `hurtEnemy`,
-`igniteForSeconds`, `MobEffects.SLOWNESS`) was correct as written, no symbol
-fixes needed. A headless `runServer` load also shows `(pisomarket) Piso
-Market initialized` with no mixin/registration errors. **Not yet verified:
-what it looks like in game.** Compiling proves the code is type-correct, not
-that the model/texture render right — item rendering, model geometry and
-display transforms can't be checked headlessly at all (`CLAUDE.md`'s
-"test with `runServer`" advice does not apply to this weapon work). Needs a
-human at the screen — via `./gradlew runClient`, or by dropping the built
-jar into a real `.minecraft/mods` folder — to confirm Frostblade renders
-correctly in hand, in inventory, and on the ground, and that Slowness
-actually applies on hit.
+first try for Frostblade, and again after the other 14 plus Lifesteal/Smite
+were added — every 26.2 API name used in `com.pisomarket.combat`
+(`ToolMaterial.IRON`, `Item.Properties.sword()`/`.axe()`, `hurtEnemy`,
+`igniteForSeconds`, `MobEffects.SLOWNESS`/`POISON`, `LivingEntity.heal()`,
+`EntityTypeTags.SENSITIVE_TO_SMITE`) was correct as written or fixed on
+sight (`hurt(DamageSource, float)` is deprecated in favour of
+`hurtServer(ServerLevel, DamageSource, float)` — confirmed by decompiling
+with `./gradlew genSources` and grepping the generated source, per "Reading
+failures" below). A headless `runServer` load also shows `(pisomarket) Piso
+Market initialized` with no mixin/registration errors for the full set.
+**Not yet verified: what any of it looks like in game.** Compiling proves
+the code is type-correct, not that the models/textures render right — item
+rendering, model geometry and display transforms can't be checked headlessly
+at all (`CLAUDE.md`'s "test with `runServer`" advice does not apply to this
+weapon work). Needs a human at the screen — via `./gradlew runClient`, or by
+dropping the built jar into a real `.minecraft/mods` folder (done on this
+machine, TLauncher's "Fabric 26.2" profile) — to confirm all 15 render
+correctly in hand, in inventory, and on the ground, and that each element
+(ignite, slow, poison, lifesteal, smite) actually applies on hit.
 
 **Windows build environment note:** on a fresh Windows machine the system
 default `java` may still be an old JRE (no compiler). Gradle's own launcher
@@ -815,10 +854,6 @@ instantly.
 - Exact rent rates, price multiplier, deed sizes/prices — tune after the
   systems run
 - Daily drop cap — deferred (see "Economy: one faucet"), not abandoned
-- **The Lock item does not exist yet.** "Lockable chests" describes it as a
-  BlackMarket purchase, and `ChestAccess`, `RestrictedChestMenu` and
-  `ChestAccessGuard` are all built — but no Lock item is registered, it is in
-  no shop catalog, and it has no texture. The feature is unreachable in game.
 - **Waypoint price** — not set (acquisition is decided: BlackMarket)
 - Whether listings ever expire and return items to the seller
 - Whether rent is strictly auto-renew, or a manual `/claim pay` also exists
