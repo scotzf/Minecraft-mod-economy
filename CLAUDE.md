@@ -574,13 +574,15 @@ since chests are vanilla blocks, not this mod's own.
 
 ## Death and revive
 
-**Superseded, 2026-08-30 — see v2 redesign §11 and `ReviveManager.java`.**
-This section's design (below) is what got planned first; the numbers that
-actually shipped are different (linear 120s/death instead of quadratic,
-capped at 1 hour instead of the 3rd death, reset every 3 in-game days
-instead of a rolling hour) and the mechanism is different too (spectator
-hold after a normal respawn, not a held death screen). Kept here as
-history, not current behavior.
+**Dropped entirely, 2026-08-30.** A working implementation existed briefly
+this session (`ReviveManager.java`/`ReviveState.java`, the v2 redesign's
+§11 numbers: 120s+120s/death capped at 1 hour, spectator hold after a
+normal respawn, `/revive` to pay from the vault and skip) — it compiled,
+loaded cleanly, and was then deliberately removed at the user's request.
+There is currently **no revive system of any kind**: dying respawns however
+plain vanilla respawns, no hold, no cooldown, no `/revive` command. The
+design below is kept only as history of what was tried, not a target to
+rebuild toward unless it comes back up.
 
 Dying starts a **120-second respawn cooldown**. The player may wait it out for
 free, or **pay to respawn immediately**.
@@ -883,16 +885,9 @@ later and are built on top of these.
 
 **Player — travel and death**
 - `/warp` — still design-only, not built. See "Waypoints" above.
-- `/revive` — pay from the vault to end an active death-hold immediately.
-  **Built 2026-08-30**, implementing v2 redesign §11 (`ReviveManager.java`,
-  `ReviveState.java`), which supersedes the earlier "Death and revive"
-  section above — that section's numbers (quadratic pricing, 3-death cap,
-  rolling hour) are NOT what got built; the real numbers are §11's. No
-  death-screen prompt exists — dying respawns normally, then the player is
-  switched to spectator for the hold instead of the death screen being
-  held open (see the comment at the top of `ReviveManager.java` for why:
-  intercepting the respawn button is exactly the click-vs-server-denial
-  resync problem this doc already warns about elsewhere).
+- `/revive` — **does not exist.** Built 2026-08-30, then removed the same
+  day — see "Death and revive" above. Dying is currently plain vanilla
+  respawn, no hold, no cooldown.
 
 **Player — territory**
 - Land Deed (bought from BlackMarket) — use it on unclaimed ground to
@@ -1200,36 +1195,14 @@ display slot — matches "like a heart and number above someone's head"
 closely enough that it's very likely the same technique whatever server
 this was seen on used.
 
-### 11. Revive system — built, numbers finalized, replaces "Death and revive" above
+### 11. Revive system — built, then dropped entirely
 
-**Built 2026-08-30** (`ReviveManager.java`, `ReviveState.java`, `/revive`
-command). This locks in different numbers than the "Death and revive"
-section earlier in this doc — that section is superseded, not just
-supplemented:
-
-- **Base cooldown: 120 seconds, +120 seconds per consecutive death**
-  (1st 120s, 2nd 240s, 3rd 360s, ... nth = 120×n seconds), **capped at 1
-  hour** (3600s — reached at the 30th consecutive death in-window, not the
-  3rd like the old draft).
-- **Consecutive-death count resets every 3 in-game days** (≈1 real hour, at
-  20 real minutes per in-game day) — a fixed elapsed-time window, not a
-  rolling hour from the first death like the old draft, and **not** reset
-  by paying to revive — only by the 3-day timer running out. Dying
-  repeatedly and always paying to skip still escalates the cooldown/price
-  for the next death within that window.
-- **Pay from vault to revive immediately: 3 Piso per second of cooldown
-  remaining**, confirmed — kept the old draft's rate since it wasn't
-  challenged. Partial skips work exactly like the old draft (wait 90s of a
-  120s cooldown, then pay 30×3=90 for the rest). At the new linear
-  escalation a full skip costs 360/720/1080/... up to 10,800 at the 1-hour
-  cap, rather than the old quadratic jump to 3,240 by the 3rd death.
-- **Mechanism differs from the original design on purpose**: rather than
-  holding the death screen open (the fiddly click-interception path this
-  doc already warns about), a death is allowed to respawn normally and the
-  freshly-respawned player is immediately switched to `GameType.SPECTATOR`
-  for the hold, then switched back (to whatever gamemode they were in
-  before dying) when the timer elapses or `/revive` is paid. Simpler, and
-  the SavedData (`ReviveState`) only persists the death-streak count, not
-  the active hold — a mid-cooldown server restart releasing everyone is an
-  accepted edge case; forgetting how many times someone already died this
-  window is not.
+**Built 2026-08-30, then removed the same day at the user's request.** The
+implementation (`ReviveManager.java`, `ReviveState.java`, `/revive`
+command — spectator hold instead of a held death screen, 120s+120s/death
+capped at 1 hour, reset every 3 in-game days, pay from the vault to skip)
+compiled and loaded cleanly, so this wasn't a technical failure — it was a
+direction change. See "Death and revive" above for what the numbers were,
+kept as history only. **There is currently no revive system at all.**
+Any future death/respawn design should be treated as a fresh decision, not
+a resumption of this one.

@@ -16,7 +16,6 @@ import com.pisomarket.economy.PisoCommands;
 import com.pisomarket.economy.VaultSync;
 import com.pisomarket.economy.harvest.HarvestFaucet;
 import com.pisomarket.market.MarketCommands;
-import com.pisomarket.revive.ReviveManager;
 import com.pisomarket.shop.PisoShopContent;
 import com.pisomarket.shop.system.ShopCommands;
 
@@ -50,7 +49,6 @@ public class PisoMarket implements ModInitializer {
 		LockContent.register();
 		ChestAccessGuard.register();
 		com.pisomarket.combat.ElementalWeapons.register();
-		ReviveManager.register();
 		PisoCreativeTabs.register();
 		LOGGER.info("Piso Market initialized");
 	}
