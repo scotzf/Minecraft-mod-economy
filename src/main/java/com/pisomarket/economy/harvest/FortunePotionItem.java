@@ -6,10 +6,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.player.Player;
@@ -50,7 +46,16 @@ public class FortunePotionItem extends Item {
 		// stacksTo(8) keeps a pocketful reasonable without letting someone
 		// carry a stack of 64 minutes of buff into one harvesting session.
 		return new FortunePotionItem(
-				new Item.Properties().setId(ResourceKey.create(Registries.ITEM, id)).stacksTo(8), effect, amplifier
+				new Item.Properties()
+						.setId(ResourceKey.create(Registries.ITEM, id))
+						.stacksTo(8)
+						// Vanilla's own drink consumable: gives the real
+						// drinking animation, the standard drink duration and
+						// the gulp sounds for free, instead of the instant
+						// right-click with a one-off sound this had before.
+						.component(net.minecraft.core.component.DataComponents.CONSUMABLE,
+								net.minecraft.world.item.component.Consumables.DEFAULT_DRINK),
+				effect, amplifier
 		);
 	}
 
@@ -60,23 +65,19 @@ public class FortunePotionItem extends Item {
 		}
 	}
 
+	// Applied when the drink completes, so the effect lands with the
+	// animation rather than instantly on click.
 	@Override
-	public InteractionResult use(final Level level, final Player player, final InteractionHand hand) {
-		ItemStack stack = player.getItemInHand(hand);
-
-		if (!level.isClientSide()) {
+	public ItemStack finishUsingItem(final ItemStack stack, final Level level, final net.minecraft.world.entity.LivingEntity entity) {
+		if (!level.isClientSide() && entity instanceof Player player) {
 			// addEffect REPLACES an existing instance of the same effect
 			// rather than adding to it, which is exactly the "not stackable"
 			// rule: drinking a second Harvest potion re-starts the minute (or
 			// upgrades I to II) instead of stacking two bonuses together.
 			player.addEffect(new MobEffectInstance(effect, DURATION_TICKS, amplifier, false, true, true), player);
+			// Creative players keep the item, same as vanilla consumables.
+			stack.consume(1, player);
 		}
-
-		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.GENERIC_DRINK.value(), SoundSource.PLAYERS, 1.0F, 1.0F);
-
-		// Creative players keep the item, same as vanilla consumables.
-		stack.consume(1, player);
-		return InteractionResult.SUCCESS;
+		return stack;
 	}
 }

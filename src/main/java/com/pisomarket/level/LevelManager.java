@@ -179,8 +179,23 @@ public final class LevelManager {
 		// Attribute modifiers live on the player ENTITY, and a fresh entity
 		// is built on every login and every respawn — so stats must be
 		// reapplied both times or they silently vanish.
-		ServerPlayerEvents.JOIN.register(player -> syncLevel(player, false));
-		ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> applyStats(newPlayer));
+		// applyStats FIRST, unconditionally. syncLevel alone was not enough:
+		// it early-returns when the recorded peak has not moved, which is the
+		// normal case on login, so a returning player got no modifiers at all.
+		ServerPlayerEvents.JOIN.register(player -> {
+			applyStats(player);
+			syncLevel(player, false);
+		});
+
+		// Respawn rebuilds the player entity from scratch, wiping every
+		// attribute modifier — hence reapplying here. The heal matters just
+		// as much: vanilla sets health to the DEFAULT max (20) as it
+		// respawns you, so raising max health afterwards left the extra
+		// hearts empty and read as "my HP reset".
+		ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+			applyStats(newPlayer);
+			newPlayer.setHealth(newPlayer.getMaxHealth());
+		});
 
 		// Vanilla has no XP-level-changed event, so poll for it.
 		ServerTickEvents.END_SERVER_TICK.register(server -> {

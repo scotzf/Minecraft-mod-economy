@@ -19,7 +19,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.equipment.ArmorType;
 
-import com.pisomarket.economy.PisoCurrency;
 import com.pisomarket.economy.harvest.PisoEffects;
 import com.pisomarket.economy.harvest.PisoLuck;
 import com.pisomarket.shop.system.PisoShopStock;

@@ -2,11 +2,7 @@ package com.pisomarket.economy.harvest;
 
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.NetherWartBlock;
@@ -116,6 +112,14 @@ public final class HarvestFaucet {
 	public static void credit(final ServerPlayer player, final int amount) {
 		player.level().getServer().getDataStorage().computeIfAbsent(PisoVault.TYPE)
 				.deposit(player.getUUID(), amount);
-		VaultSync.sync(player);
+		VaultSync.markDirty(player);
+
+		// Vanilla's XP pickup chime. Shards behave like XP now, so they
+		// should sound like it — the payout is otherwise silent and easy to
+		// miss entirely.
+		player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+				net.minecraft.sounds.SoundEvents.EXPERIENCE_ORB_PICKUP,
+				net.minecraft.sounds.SoundSource.PLAYERS, 0.6F,
+				1.0F + (player.getRandom().nextFloat() - 0.5F) * 0.3F);
 	}
 }

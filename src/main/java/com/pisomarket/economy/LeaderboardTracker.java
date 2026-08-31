@@ -12,7 +12,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
-import com.pisomarket.economy.PisoCurrency;
 
 // Keeps the wealth leaderboard up to date. See PisoLeaderboard for why this
 // is a periodic snapshot rather than a live ranking.
