@@ -15,6 +15,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.NameAndId;
 
+import com.pisomarket.util.PisoText;
+
 // Registers /balance and /donate. See CLAUDE.md's "In-game
 // command surface" for the full documented behavior of each.
 // /donate replaces /pay as of the v2 redesign (same behavior, new name).
@@ -57,7 +59,7 @@ public final class PisoCommands {
 		ServerPlayer player = context.getSource().getPlayerOrException();
 		long amount = vault(context.getSource().getServer()).getBalance(player.getUUID());
 		VaultSync.sync(player); // cheap self-heal if the HUD ever drifts
-		context.getSource().sendSuccess(() -> Component.literal("Balance: " + amount), false);
+		context.getSource().sendSuccess(() -> PisoText.body("Balance: ").append(PisoText.money(amount)), false);
 		return 1;
 	}
 
@@ -73,14 +75,14 @@ public final class PisoCommands {
 		UUID targetId = target.id();
 
 		if (targetId.equals(sender.getUUID())) {
-			context.getSource().sendFailure(Component.literal("You can't donate to yourself"));
+			context.getSource().sendFailure(PisoText.failure("You can't donate to yourself"));
 			return 0;
 		}
 
 		MinecraftServer server = context.getSource().getServer();
 		boolean success = vault(server).transfer(sender.getUUID(), targetId, amount);
 		if (!success) {
-			context.getSource().sendFailure(Component.literal("Insufficient balance"));
+			context.getSource().sendFailure(PisoText.failure("Insufficient balance"));
 			return 0;
 		}
 
@@ -91,7 +93,7 @@ public final class PisoCommands {
 		}
 
 		String targetName = target.name();
-		context.getSource().sendSuccess(() -> Component.literal("Donated " + amount + " to " + targetName), false);
+		context.getSource().sendSuccess(() -> PisoText.success("Donated ").append(PisoText.money(amount)).append(PisoText.plain(" to ")).append(PisoText.name(targetName)), false);
 		return 1;
 	}
 

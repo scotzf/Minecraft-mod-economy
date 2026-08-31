@@ -8,7 +8,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantments;
 
 import com.pisomarket.combat.ElementalWeapons;
-import com.pisomarket.economy.harvest.HarvestPotionItem;
+import com.pisomarket.economy.harvest.FortunePotionItem;
 import com.pisomarket.travel.WaypointContent;
 
 // The system shop catalog, restructured for v2.
@@ -101,9 +101,9 @@ public final class ShopCatalog {
 		id = addEntry(entries, id, Items.NETHERITE_INGOT, TIER_CONSUMABLE, 50, 4, 14);
 		id = addEntry(entries, id, Items.ELYTRA, TIER_CONSUMABLE, 120, 1, 30);
 		// Flat prices, NOT the old "half of one minute's yield" formula.
-		id = addEntry(entries, id, HarvestPotionItem.HARVEST_I, TIER_CONSUMABLE, 30, 16, 1);
-		id = addEntry(entries, id, HarvestPotionItem.HARVEST_II, TIER_CONSUMABLE, 40, 8, 1);
-		id = addEntry(entries, id, HarvestPotionItem.LUCK, TIER_CONSUMABLE, 30, 8, 1);
+		id = addEntry(entries, id, FortunePotionItem.FORTUNE_I, TIER_CONSUMABLE, 30, 16, 1);
+		id = addEntry(entries, id, FortunePotionItem.FORTUNE_II, TIER_CONSUMABLE, 40, 8, 1);
+		id = addEntry(entries, id, FortunePotionItem.LUCK, TIER_CONSUMABLE, 30, 8, 1);
 
 		// The Waypoint block. Sold rather than craftable, so fast travel is
 		// a money sink a player has to earn rather than a free convenience.

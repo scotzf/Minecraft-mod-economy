@@ -30,14 +30,14 @@ public final class PisoEffects {
 	// weaker potion, amplifier 1 the stronger — one effect with two
 	// strengths, which is what makes them non-stackable: drinking either
 	// replaces whatever was active rather than adding to it.
-	public static final Holder<MobEffect> HARVEST_BOOST = register(
-			"harvest_boost", new SimpleEffect(MobEffectCategory.BENEFICIAL, 0xC8A24B)
+	public static final Holder<MobEffect> FORTUNE_BOOST = register(
+			"fortune_boost", new SimpleEffect(MobEffectCategory.BENEFICIAL, 0xC8A24B)
 	);
 
 	// Rolls a second chance to pay out again on the same crop, doubling a
 	// successful harvest.
-	public static final Holder<MobEffect> HARVEST_LUCK = register(
-			"harvest_luck", new SimpleEffect(MobEffectCategory.BENEFICIAL, 0x4BC86E)
+	public static final Holder<MobEffect> FORTUNE_LUCK = register(
+			"fortune_luck", new SimpleEffect(MobEffectCategory.BENEFICIAL, 0x4BC86E)
 	);
 
 	// MobEffect's constructor is protected, so a subclass is the only way to

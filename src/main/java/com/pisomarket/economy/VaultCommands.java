@@ -14,6 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 import com.pisomarket.util.InventoryUtil;
+import com.pisomarket.util.PisoText;
 
 // /deposit and /withdraw — moving Shards between inventory and vault.
 //
@@ -58,13 +59,13 @@ public final class VaultCommands {
 		long held = player.getInventory().countItem(PisoCurrency.SUNSTONE_SHARD);
 
 		if (held <= 0) {
-			context.getSource().sendFailure(Component.literal("You have no Sunstone Shards to deposit."));
+			context.getSource().sendFailure(PisoText.failure("You have no Sunstone Shards to deposit."));
 			return 0;
 		}
 
 		long amount = requested < 0 ? held : Math.min(requested, held);
 		if (amount <= 0) {
-			context.getSource().sendFailure(Component.literal("You don't have that many Shards."));
+			context.getSource().sendFailure(PisoText.failure("You don't have that many Shards."));
 			return 0;
 		}
 
@@ -72,15 +73,14 @@ public final class VaultCommands {
 		// credit only what was actually taken, so the two can never diverge.
 		int removed = removeShards(player, (int) amount);
 		if (removed <= 0) {
-			context.getSource().sendFailure(Component.literal("You have no Sunstone Shards to deposit."));
+			context.getSource().sendFailure(PisoText.failure("You have no Sunstone Shards to deposit."));
 			return 0;
 		}
 
 		vault(player).deposit(player.getUUID(), removed);
 		VaultSync.sync(player);
 		final int deposited = removed;
-		context.getSource().sendSuccess(() -> Component.literal("Deposited ")
-				.append(Component.literal(String.valueOf(deposited)).withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD)),
+		context.getSource().sendSuccess(() -> PisoText.success("Deposited ").append(PisoText.money(deposited)),
 				false);
 		return 1;
 	}
@@ -90,7 +90,7 @@ public final class VaultCommands {
 		PisoVault vault = vault(player);
 
 		if (!vault.withdraw(player.getUUID(), amount)) {
-			context.getSource().sendFailure(Component.literal("Insufficient balance."));
+			context.getSource().sendFailure(PisoText.failure("Insufficient balance."));
 			return 0;
 		}
 
@@ -115,13 +115,12 @@ public final class VaultCommands {
 		VaultSync.sync(player);
 
 		if (given == 0) {
-			context.getSource().sendFailure(Component.literal("No inventory space."));
+			context.getSource().sendFailure(PisoText.failure("No inventory space."));
 			return 0;
 		}
 
 		final long withdrawn = given;
-		context.getSource().sendSuccess(() -> Component.literal("Withdrew ")
-				.append(Component.literal(String.valueOf(withdrawn)).withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD)),
+		context.getSource().sendSuccess(() -> PisoText.success("Withdrew ").append(PisoText.money(withdrawn)),
 				false);
 		return 1;
 	}

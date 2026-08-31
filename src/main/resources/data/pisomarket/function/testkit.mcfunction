@@ -45,8 +45,8 @@ give @s pisomarket:waypoint 2
 # commands too, so the block is no longer the only way to reach the vault)
 give @s pisomarket:shop
 # Harvest boosters, normally only reachable via the shop
-give @s pisomarket:harvest_potion_i
-give @s pisomarket:harvest_potion_ii
+give @s pisomarket:fortune_potion_i
+give @s pisomarket:fortune_potion_ii
 give @s pisomarket:luck_potion
 # Vault balance to buy BlackMarket deeds, system shop stock, and pay rent
 eco set @s 500000

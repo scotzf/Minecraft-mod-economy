@@ -12,6 +12,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
+import com.pisomarket.util.PisoText;
+
 // Registers /eco give|take|set|total — the admin-only vault mutations from
 // CLAUDE.md's "In-game command surface". Gated at permission level 2, same
 // as every other admin command in that doc. This was documented as part of
@@ -72,7 +74,7 @@ public final class EcoCommands {
 		vault(context.getSource().getServer()).deposit(target.getUUID(), amount);
 		VaultSync.sync(target);
 		logAdminAction(context, "Gave " + amount + " to " + target.getGameProfile().name());
-		context.getSource().sendSuccess(() -> Component.literal("Gave " + amount), true);
+		context.getSource().sendSuccess(() -> PisoText.success("Gave ").append(PisoText.money(amount)), true);
 		return 1;
 	}
 
@@ -80,12 +82,12 @@ public final class EcoCommands {
 		ServerPlayer target = EntityArgument.getPlayer(context, "player");
 		boolean success = vault(context.getSource().getServer()).withdraw(target.getUUID(), amount);
 		if (!success) {
-			context.getSource().sendFailure(Component.literal("That player doesn't have " + amount));
+			context.getSource().sendFailure(PisoText.failure("That player doesn't have ").append(PisoText.money(amount)));
 			return 0;
 		}
 		VaultSync.sync(target);
 		logAdminAction(context, "Took " + amount + " from " + target.getGameProfile().name());
-		context.getSource().sendSuccess(() -> Component.literal("Took " + amount), true);
+		context.getSource().sendSuccess(() -> PisoText.success("Took ").append(PisoText.money(amount)), true);
 		return 1;
 	}
 
@@ -94,14 +96,15 @@ public final class EcoCommands {
 		vault(context.getSource().getServer()).setBalance(target.getUUID(), amount);
 		VaultSync.sync(target);
 		logAdminAction(context, "Set " + target.getGameProfile().name() + " to " + amount);
-		context.getSource().sendSuccess(() -> Component.literal("Set balance to " + amount), true);
+		context.getSource().sendSuccess(() -> PisoText.success("Set balance to ").append(PisoText.money(amount)), true);
 		return 1;
 	}
 
 	private static int total(final CommandContext<CommandSourceStack> context) {
 		long total = vault(context.getSource().getServer()).totalVaultBalance();
 		context.getSource().sendSuccess(
-				() -> Component.literal("Total vault balance: " + total + " (vault only — cash in inventories/chests isn't tracked)"),
+				() -> PisoText.body("Total vault balance: ").append(PisoText.money(total))
+						.append(PisoText.hint("  vault only; carried Shards aren't tracked")),
 				false
 		);
 		return 1;

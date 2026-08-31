@@ -18,6 +18,7 @@ import net.minecraft.world.item.equipment.ArmorType;
 import com.pisomarket.economy.PisoCurrency;
 import com.pisomarket.economy.harvest.PisoEffects;
 import com.pisomarket.economy.harvest.PisoLuck;
+import com.pisomarket.shop.system.PisoShopStock;
 
 // The second faucet: Shards, custom weapons and custom armor from mob kills.
 //
@@ -44,6 +45,14 @@ public final class MobDrops {
 			ElementalWeapons.FROSTBLADE, ElementalWeapons.FROSTSCYTHE, ElementalWeapons.MOLTENBLADE);
 	private static final List<Item> TIER_4 = List.of(
 			ElementalWeapons.ABOMINABLEBLADE, ElementalWeapons.MOLTENSWORD, ElementalWeapons.FROSTAXE);
+
+	// Boss payout cooldown. A full payout is available once per this many
+	// in-game days PER PLAYER PER BOSS TYPE; repeat kills inside the window
+	// pay REPEAT_PAYOUT_FRACTION instead. 7 in-game days is roughly 2.3
+	// real hours. Both numbers are tunable — the point is to break the
+	// respawn loop, not to make repeat boss fights worthless.
+	public static final int BOSS_COOLDOWN_DAYS = 7;
+	public static final double REPEAT_PAYOUT_FRACTION = 0.01;
 
 	private static final ArmorType[] PIECES = {
 			ArmorType.HELMET, ArmorType.CHESTPLATE, ArmorType.LEGGINGS, ArmorType.BOOTS};
@@ -161,7 +170,9 @@ public final class MobDrops {
 		if (type == EntityTypes.GUARDIAN) {
 			return Drop.flat(40).withWeapon(0.03, TIER_4);
 		}
-		if (type == EntityTypes.VINDICATOR || type == EntityTypes.PILLAGER || type == EntityTypes.ILLUSIONER) {
+		// Illusioner deliberately absent: it has no natural spawn in
+		// survival, so a table entry for it could never fire.
+		if (type == EntityTypes.VINDICATOR || type == EntityTypes.PILLAGER) {
 			return Drop.flat(30);
 		}
 
@@ -214,12 +225,16 @@ public final class MobDrops {
 
 	// Rare/structure mobs get HP-derived armor odds; everything else uses
 	// whatever the table row set explicitly.
+	private static boolean isBoss(final EntityType<?> type) {
+		return type == EntityTypes.WARDEN || type == EntityTypes.ENDER_DRAGON || type == EntityTypes.WITHER;
+	}
+
 	private static boolean usesHealthDerivedArmor(final EntityType<?> type) {
 		return type == EntityTypes.ELDER_GUARDIAN || type == EntityTypes.RAVAGER
 				|| type == EntityTypes.EVOKER || type == EntityTypes.PIGLIN_BRUTE
 				|| type == EntityTypes.BREEZE || type == EntityTypes.SHULKER
 				|| type == EntityTypes.GUARDIAN || type == EntityTypes.VINDICATOR
-				|| type == EntityTypes.PILLAGER || type == EntityTypes.ILLUSIONER;
+				|| type == EntityTypes.PILLAGER;
 	}
 
 	public static void register() {
@@ -278,7 +293,26 @@ public final class MobDrops {
 			// chance roll to boost, so Fortune does nothing here by design —
 			// a potion should not multiply a boss payout.
 			count = drop.shardMin();
-			if (killer.hasEffect(PisoEffects.HARVEST_LUCK)) {
+
+			// Boss cooldown. Wither and Ender Dragon are re-summonable, so
+			// without this a player can loop respawns for an unbounded
+			// income far beyond every other activity combined.
+			if (isBoss(victim.getType())) {
+				int today = PisoShopStock.currentDay(level.getServer());
+				String bossId = victim.getType().toString();
+				BossPayoutState payouts = level.getServer().getDataStorage().computeIfAbsent(BossPayoutState.TYPE);
+
+				if (payouts.isFullPayoutDue(killer.getUUID(), bossId, today, BOSS_COOLDOWN_DAYS)) {
+					payouts.recordFullPayout(killer.getUUID(), bossId, today);
+				} else {
+					count = (int) Math.max(1, count * REPEAT_PAYOUT_FRACTION);
+					killer.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+							"Reduced payout — you already claimed this boss recently.")
+							.withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+				}
+			}
+
+			if (killer.hasEffect(PisoEffects.FORTUNE_LUCK)) {
 				count *= 2;
 			}
 		} else {

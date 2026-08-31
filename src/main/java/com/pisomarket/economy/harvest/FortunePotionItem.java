@@ -19,37 +19,37 @@ import net.minecraft.world.level.Level;
 
 import com.pisomarket.PisoMarket;
 
-// The three BlackMarket harvest potions. Drinking one applies a status
+// The three Fortune potions. Drinking one applies a status
 // effect for HarvestFaucet to read (see PisoEffects).
 //
 // All three are the same class with different parameters, because the only
 // thing that varies is which effect is applied and how strong it is.
-public class HarvestPotionItem extends Item {
+public class FortunePotionItem extends Item {
 	// One minute, as specified. Effect durations are in ticks; 20 ticks is
 	// one real second.
 	public static final int DURATION_TICKS = 60 * 20;
 
-	public static final HarvestPotionItem HARVEST_I = create("harvest_potion_i", PisoEffects.HARVEST_BOOST, 0);
-	public static final HarvestPotionItem HARVEST_II = create("harvest_potion_ii", PisoEffects.HARVEST_BOOST, 1);
-	public static final HarvestPotionItem LUCK = create("luck_potion", PisoEffects.HARVEST_LUCK, 0);
+	public static final FortunePotionItem FORTUNE_I = create("fortune_potion_i", PisoEffects.FORTUNE_BOOST, 0);
+	public static final FortunePotionItem FORTUNE_II = create("fortune_potion_ii", PisoEffects.FORTUNE_BOOST, 1);
+	public static final FortunePotionItem LUCK = create("luck_potion", PisoEffects.FORTUNE_LUCK, 0);
 
-	private static final String[] NAMES = {"harvest_potion_i", "harvest_potion_ii", "luck_potion"};
-	private static final Item[] ITEMS = {HARVEST_I, HARVEST_II, LUCK};
+	private static final String[] NAMES = {"fortune_potion_i", "fortune_potion_ii", "luck_potion"};
+	private static final Item[] ITEMS = {FORTUNE_I, FORTUNE_II, LUCK};
 
 	private final Holder<MobEffect> effect;
 	private final int amplifier;
 
-	protected HarvestPotionItem(final Properties properties, final Holder<MobEffect> effect, final int amplifier) {
+	protected FortunePotionItem(final Properties properties, final Holder<MobEffect> effect, final int amplifier) {
 		super(properties);
 		this.effect = effect;
 		this.amplifier = amplifier;
 	}
 
-	private static HarvestPotionItem create(final String name, final Holder<MobEffect> effect, final int amplifier) {
+	private static FortunePotionItem create(final String name, final Holder<MobEffect> effect, final int amplifier) {
 		Identifier id = Identifier.fromNamespaceAndPath(PisoMarket.MOD_ID, name);
 		// stacksTo(8) keeps a pocketful reasonable without letting someone
 		// carry a stack of 64 minutes of buff into one harvesting session.
-		return new HarvestPotionItem(
+		return new FortunePotionItem(
 				new Item.Properties().setId(ResourceKey.create(Registries.ITEM, id)).stacksTo(8), effect, amplifier
 		);
 	}

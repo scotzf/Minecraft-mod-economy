@@ -29,7 +29,7 @@ public final class PisoLuck {
 	// Fortune effect. Public so the shop can price the potions against the
 	// real numbers rather than hardcoded duplicates.
 	public static double effectiveChance(final ServerPlayer player, final double baseChance) {
-		MobEffectInstance boost = player.getEffect(PisoEffects.HARVEST_BOOST);
+		MobEffectInstance boost = player.getEffect(PisoEffects.FORTUNE_BOOST);
 		if (boost == null) {
 			return baseChance;
 		}
@@ -47,6 +47,6 @@ public final class PisoLuck {
 		if (ThreadLocalRandom.current().nextDouble() >= chance) {
 			return 0;
 		}
-		return player.hasEffect(PisoEffects.HARVEST_LUCK) ? 2 : 1;
+		return player.hasEffect(PisoEffects.FORTUNE_LUCK) ? 2 : 1;
 	}
 }

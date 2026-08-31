@@ -37,7 +37,7 @@ public class PisoMarket implements ModInitializer {
 		com.pisomarket.economy.LeaderboardTracker.register();
 		HarvestFaucet.register();
 		com.pisomarket.economy.harvest.PisoEffects.register();
-		com.pisomarket.economy.harvest.HarvestPotionItem.register();
+		com.pisomarket.economy.harvest.FortunePotionItem.register();
 		MarketCommands.register();
 		ShopCommands.register();
 		PisoShopContent.register();
