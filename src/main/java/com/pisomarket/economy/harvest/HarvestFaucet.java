@@ -1,7 +1,5 @@
 package com.pisomarket.economy.harvest;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 
 import net.minecraft.core.BlockPos;
@@ -52,13 +50,19 @@ public final class HarvestFaucet {
 	// crops pay, which keeps the faucet tied to real effort per harvest.
 	// Do not "complete the set" by adding them.
 	public static double baseChanceFor(final BlockState state) {
-		if (state.is(Blocks.NETHER_WART)) {
-			// NetherWartBlock is NOT a CropBlock and has its own 0-3 age
-			// property, so isMaxAge() is unavailable here.
-			return state.getValue(NetherWartBlock.AGE) >= NetherWartBlock.MAX_AGE ? CHANCE_NETHER_WART : 0.0;
+		// CropBlock first: this runs on EVERY block any player breaks, and
+		// the overwhelmingly common case is stone or dirt, which this single
+		// instanceof rejects outright.
+		if (!(state.getBlock() instanceof CropBlock crop)) {
+			// Nether wart is the one payer that is NOT a CropBlock — it has
+			// its own 0-3 age property, so isMaxAge() is unavailable for it.
+			if (state.is(Blocks.NETHER_WART)) {
+				return state.getValue(NetherWartBlock.AGE) >= NetherWartBlock.MAX_AGE ? CHANCE_NETHER_WART : 0.0;
+			}
+			return 0.0;
 		}
 
-		if (!(state.getBlock() instanceof CropBlock crop) || !crop.isMaxAge(state)) {
+		if (!crop.isMaxAge(state)) {
 			return 0.0;
 		}
 
@@ -90,6 +94,12 @@ public final class HarvestFaucet {
 			if (base <= 0.0) {
 				return;
 			}
+
+			// XP is awarded here rather than from a second block-break
+			// listener: both handlers needed the same baseChanceFor(state)
+			// result, so a separate listener meant doing the crop lookup
+			// twice for every block any player broke.
+			serverPlayer.giveExperiencePoints(com.pisomarket.level.LevelManager.XP_FARMING);
 
 			int payout = PisoLuck.rollPayout(serverPlayer, base);
 			if (payout <= 0) {

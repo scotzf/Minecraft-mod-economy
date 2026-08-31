@@ -1,6 +1,10 @@
 package com.pisomarket.combat;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -130,97 +134,76 @@ public final class MobDrops {
 		return ArmorSet.SENTINEL;
 	}
 
-	private static Drop tableFor(final EntityType<?> type) {
+	// Built once at registration rather than evaluated as an if-chain on
+	// every mob death. The old form walked up to ~30 EntityType comparisons
+	// for the most common case (a mob with no drops at all), which is the
+	// single hottest path in this class.
+	private static final Map<EntityType<?>, Drop> TABLE = new HashMap<>();
+	private static final Set<EntityType<?>> HEALTH_DERIVED_ARMOR = new HashSet<>();
+
+	private static void buildTable() {
 		// --- Bosses. Tier 1 mobs drop armor at 100% alongside their weapon,
 		// and pay across a 500k-1m band scaled by how hard the fight is.
 		// These are deliberately the only income at this magnitude — see the
 		// economy note in CLAUDE.md about what that does to farming.
-		if (type == EntityTypes.WARDEN) {
-			return Drop.flat(1_000_000).withWeapon(1.0, TIER_1).withArmor(1.0, ArmorSet.BULWARK);
-		}
-		if (type == EntityTypes.ENDER_DRAGON) {
-			return Drop.flat(750_000).withWeapon(0.50, TIER_2).withRareWeapon(0.05, TIER_1)
-					.withArmor(1.0, ArmorSet.BULWARK);
-		}
-		if (type == EntityTypes.WITHER) {
-			return Drop.flat(500_000).withWeapon(0.40, TIER_2).withRareWeapon(0.03, TIER_1)
-					.withArmor(1.0, ArmorSet.AEGIS);
-		}
+		TABLE.put(EntityTypes.WARDEN,
+				Drop.flat(1_000_000).withWeapon(1.0, TIER_1).withArmor(1.0, ArmorSet.BULWARK));
+		TABLE.put(EntityTypes.ENDER_DRAGON,
+				Drop.flat(750_000).withWeapon(0.50, TIER_2).withRareWeapon(0.05, TIER_1).withArmor(1.0, ArmorSet.BULWARK));
+		TABLE.put(EntityTypes.WITHER,
+				Drop.flat(500_000).withWeapon(0.40, TIER_2).withRareWeapon(0.03, TIER_1).withArmor(1.0, ArmorSet.AEGIS));
 
 		// --- Very rare / structure-gated. Armor chance is HP-derived and
-		// applied at award time (see awardArmor), so these rows leave it 0.
-		if (type == EntityTypes.ELDER_GUARDIAN) {
-			return Drop.flat(500).withWeapon(0.15, TIER_2);
-		}
-		if (type == EntityTypes.RAVAGER) {
-			return Drop.flat(300).withWeapon(0.10, TIER_3);
-		}
-		if (type == EntityTypes.EVOKER) {
-			return Drop.flat(100).withWeapon(0.08, TIER_3);
-		}
-		if (type == EntityTypes.PIGLIN_BRUTE) {
-			return Drop.flat(80).withWeapon(0.05, TIER_4);
-		}
-		if (type == EntityTypes.BREEZE) {
-			return Drop.flat(60).withWeapon(0.05, TIER_3);
-		}
-		if (type == EntityTypes.SHULKER) {
-			return Drop.flat(60);
-		}
-		if (type == EntityTypes.GUARDIAN) {
-			return Drop.flat(40).withWeapon(0.03, TIER_4);
-		}
+		// applied at award time (see awardArmor).
+		TABLE.put(EntityTypes.ELDER_GUARDIAN, Drop.flat(500).withWeapon(0.15, TIER_2));
+		TABLE.put(EntityTypes.RAVAGER, Drop.flat(300).withWeapon(0.10, TIER_3));
+		TABLE.put(EntityTypes.EVOKER, Drop.flat(100).withWeapon(0.08, TIER_3));
+		TABLE.put(EntityTypes.PIGLIN_BRUTE, Drop.flat(80).withWeapon(0.05, TIER_4));
+		TABLE.put(EntityTypes.BREEZE, Drop.flat(60).withWeapon(0.05, TIER_3));
+		TABLE.put(EntityTypes.SHULKER, Drop.flat(60));
+		TABLE.put(EntityTypes.GUARDIAN, Drop.flat(40).withWeapon(0.03, TIER_4));
 		// Illusioner deliberately absent: it has no natural spawn in
 		// survival, so a table entry for it could never fire.
-		if (type == EntityTypes.VINDICATOR || type == EntityTypes.PILLAGER) {
-			return Drop.flat(30);
-		}
+		TABLE.put(EntityTypes.VINDICATOR, Drop.flat(30));
+		TABLE.put(EntityTypes.PILLAGER, Drop.flat(30));
 
-		// --- Uncommon. Three of these carry the hand-set armor chances.
+		HEALTH_DERIVED_ARMOR.addAll(Set.of(
+				EntityTypes.ELDER_GUARDIAN, EntityTypes.RAVAGER, EntityTypes.EVOKER,
+				EntityTypes.PIGLIN_BRUTE, EntityTypes.BREEZE, EntityTypes.SHULKER,
+				EntityTypes.GUARDIAN, EntityTypes.VINDICATOR, EntityTypes.PILLAGER));
+
+		// --- Uncommon. Three of these carry hand-set armor chances.
 		// Blaze and Wither Skeleton sit at 1%, NOT 10%: both are
 		// spawner-farmable in fortresses, and at 10% a full four-piece set
 		// was about forty kills — an afternoon. At 1% it is a few hundred.
-		if (type == EntityTypes.WITCH || type == EntityTypes.ENDERMAN) {
-			return Drop.shards(0.20, 1, 3);
-		}
-		if (type == EntityTypes.BLAZE) {
-			return Drop.shards(0.15, 1, 2).withArmor(0.01, ArmorSet.AEGIS);
-		}
-		if (type == EntityTypes.WITHER_SKELETON) {
-			return Drop.shards(0.15, 1, 2).withArmor(0.01, ArmorSet.BULWARK);
-		}
-		if (type == EntityTypes.GHAST) {
-			return Drop.shards(0.15, 1, 2);
-		}
-		if (type == EntityTypes.HOGLIN || type == EntityTypes.ZOGLIN) {
-			return Drop.shards(0.12, 1, 2);
-		}
-		if (type == EntityTypes.PHANTOM) {
-			return Drop.shards(0.10, 1, 1).withArmor(0.01, ArmorSet.SENTINEL);
-		}
-		if (type == EntityTypes.PIGLIN || type == EntityTypes.SLIME
-				|| type == EntityTypes.MAGMA_CUBE || type == EntityTypes.CAVE_SPIDER || type == EntityTypes.STRAY
-				|| type == EntityTypes.BOGGED || type == EntityTypes.HUSK || type == EntityTypes.DROWNED) {
-			return Drop.shards(0.10, 1, 1);
+		TABLE.put(EntityTypes.WITCH, Drop.shards(0.20, 1, 3));
+		TABLE.put(EntityTypes.ENDERMAN, Drop.shards(0.20, 1, 3));
+		TABLE.put(EntityTypes.BLAZE, Drop.shards(0.15, 1, 2).withArmor(0.01, ArmorSet.AEGIS));
+		TABLE.put(EntityTypes.WITHER_SKELETON, Drop.shards(0.15, 1, 2).withArmor(0.01, ArmorSet.BULWARK));
+		TABLE.put(EntityTypes.GHAST, Drop.shards(0.15, 1, 2));
+		TABLE.put(EntityTypes.HOGLIN, Drop.shards(0.12, 1, 2));
+		TABLE.put(EntityTypes.ZOGLIN, Drop.shards(0.12, 1, 2));
+		TABLE.put(EntityTypes.PHANTOM, Drop.shards(0.10, 1, 1).withArmor(0.01, ArmorSet.SENTINEL));
+		for (EntityType<?> type : new EntityType<?>[] {
+				EntityTypes.PIGLIN, EntityTypes.SLIME, EntityTypes.MAGMA_CUBE, EntityTypes.CAVE_SPIDER,
+				EntityTypes.STRAY, EntityTypes.BOGGED, EntityTypes.HUSK, EntityTypes.DROWNED}) {
+			TABLE.put(type, Drop.shards(0.10, 1, 1));
 		}
 
 		// --- Endermite: paid flat for RARITY, not difficulty. Most players
 		// never see one (it only spawns from ender pearl misthrows), so a
 		// 5% chance of 1 shard meant it effectively never paid at all.
-		if (type == EntityTypes.ENDERMITE) {
-			return Drop.flat(5);
-		}
+		TABLE.put(EntityTypes.ENDERMITE, Drop.flat(5));
 
 		// --- Common. No armor, ever.
-		if (type == EntityTypes.ZOMBIE || type == EntityTypes.ZOMBIE_VILLAGER || type == EntityTypes.SKELETON
-				|| type == EntityTypes.CREEPER || type == EntityTypes.SPIDER
-				|| type == EntityTypes.SILVERFISH) {
-			return Drop.shards(0.05, 1, 1);
+		for (EntityType<?> type : new EntityType<?>[] {
+				EntityTypes.ZOMBIE, EntityTypes.ZOMBIE_VILLAGER, EntityTypes.SKELETON,
+				EntityTypes.CREEPER, EntityTypes.SPIDER, EntityTypes.SILVERFISH}) {
+			TABLE.put(type, Drop.shards(0.05, 1, 1));
 		}
 
-		// Everything else — passive animals, villagers, and CRUCIALLY
-		// Iron Golem and Snow Golem (safeguard 2) — pays nothing.
-		return null;
+		// Anything absent — passive animals, villagers, and CRUCIALLY Iron
+		// Golem and Snow Golem (safeguard 2) — pays nothing.
 	}
 
 	// Rare/structure mobs get HP-derived armor odds; everything else uses
@@ -229,15 +212,10 @@ public final class MobDrops {
 		return type == EntityTypes.WARDEN || type == EntityTypes.ENDER_DRAGON || type == EntityTypes.WITHER;
 	}
 
-	private static boolean usesHealthDerivedArmor(final EntityType<?> type) {
-		return type == EntityTypes.ELDER_GUARDIAN || type == EntityTypes.RAVAGER
-				|| type == EntityTypes.EVOKER || type == EntityTypes.PIGLIN_BRUTE
-				|| type == EntityTypes.BREEZE || type == EntityTypes.SHULKER
-				|| type == EntityTypes.GUARDIAN || type == EntityTypes.VINDICATOR
-				|| type == EntityTypes.PILLAGER;
-	}
+
 
 	public static void register() {
+		buildTable();
 		ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
 			if (!(entity.level() instanceof ServerLevel level)) {
 				return;
@@ -252,7 +230,7 @@ public final class MobDrops {
 				return;
 			}
 
-			Drop drop = tableFor(entity.getType());
+			Drop drop = TABLE.get(entity.getType());
 			if (drop == null) {
 				return;
 			}
@@ -268,7 +246,7 @@ public final class MobDrops {
 		double chance;
 		ArmorSet set;
 
-		if (usesHealthDerivedArmor(victim.getType())) {
+		if (HEALTH_DERIVED_ARMOR.contains(victim.getType())) {
 			chance = armorChanceFromHealth(victim);
 			set = armorSetFromHealth(victim);
 		} else {
