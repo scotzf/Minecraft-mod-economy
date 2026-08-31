@@ -974,13 +974,24 @@ instantly.
 - Exact rent rates, price multiplier, deed sizes/prices — tune after the
   systems run
 - Daily drop cap — deferred (see "Economy: one faucet"), not abandoned
-- **NEXT SESSION'S TOPIC: prices for all 12 custom weapons.** The values
-  currently live in `ShopCatalog` Tier 4 (800 / 1500 / 3000 / 5000, mirroring
-  the rarity tiers) are a FIRST PASS that was never agreed — they exist only
-  so the tier is buyable at all. Re-decide them deliberately.
-- **Waypoint price** — not set, and the Waypoint block is currently NOT in
-  the shop catalog at all (only obtainable via `/give` and the testkit).
-  Decide alongside the weapon prices above.
+- **Weapon shop prices — DECIDED 2026-08-31, but the numbers do not work.**
+  Only the Tier 4 (weakest) group is sold: Abominable Blade 200,000, Frost
+  Axe 150,000, Molten Sword 100,000. Everything stronger is mob-drop-only.
+  The intent is sound — the shop should not sell top-tier gear. **The prices
+  are the problem**, and this needs revisiting:
+  - At ~5 shards/hour from mob grinding, 100,000 is ~20,000 hours. Farming
+    is slower still. Neither faucet can realistically reach these numbers.
+  - The only income at that scale is boss drops (Warden 10,000), so 100k is
+    "ten Wardens".
+  - But **one Warden already drops a Tier 1 weapon at 100%** — strictly
+    better than the Tier 4 weapon 200,000 buys. So the rational play is
+    always to kill Wardens and never open the shop, which makes the whole
+    Tier 4 shop listing dead content.
+  - Fix is one of: drop weapon prices to boss-income scale (~5k-20k), raise
+    the faucet substantially, or accept Tier 4 shop weapons as deliberately
+    vestigial.
+- **Waypoint price — DECIDED: 5,000**, sold in the shop (`TIER_CONSUMABLE`).
+  This one IS reachable: roughly half a Warden, or sustained mob grinding.
 - Whether listings ever expire and return items to the seller
 - Whether rent is strictly auto-renew, or a manual `/claim pay` also exists
 - Whether `/pay` should exist at all, given players can hand over coins directly

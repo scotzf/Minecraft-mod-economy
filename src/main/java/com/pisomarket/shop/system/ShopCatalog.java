@@ -9,6 +9,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 
 import com.pisomarket.combat.ElementalWeapons;
 import com.pisomarket.economy.harvest.HarvestPotionItem;
+import com.pisomarket.travel.WaypointContent;
 
 // The system shop catalog, restructured for v2.
 //
@@ -104,25 +105,26 @@ public final class ShopCatalog {
 		id = addEntry(entries, id, HarvestPotionItem.HARVEST_II, TIER_CONSUMABLE, 40, 8, 1);
 		id = addEntry(entries, id, HarvestPotionItem.LUCK, TIER_CONSUMABLE, 30, 8, 1);
 
-		// --- Tier 4: the custom weapons. Also droppable from mobs (see
-		// MobDrops) — the shop is the reliable-but-expensive path, mob
-		// drops are the lucky one.
+		// The Waypoint block. Sold rather than craftable, so fast travel is
+		// a money sink a player has to earn rather than a free convenience.
+		id = addEntry(entries, id, WaypointContent.WAYPOINT_BLOCK.asItem(), TIER_CONSUMABLE, 5000, 2, 7);
+
+		// --- Tier 4: ONLY the weakest weapon group is sold. Everything
+		// stronger (Souls, Divine, Abominable heavy/scythe, Frost/Molten
+		// blade) is mob-drop-only — see MobDrops. The shop deliberately
+		// cannot sell you a top-tier weapon at any price.
 		//
-		// PRICES ARE A FIRST PASS, never explicitly agreed: they mirror the
-		// weapon rarity tiers (Souls most expensive, Tier 4 cheapest) at
-		// roughly 800 / 1500 / 3000 / 5000. Adjust freely.
-		id = addEntry(entries, id, ElementalWeapons.SOUL_COLLECTOR, TIER_PRESTIGE, 5000, 1, 60);
-		id = addEntry(entries, id, ElementalWeapons.SOUL_DEVOURER, TIER_PRESTIGE, 5000, 1, 60);
-		id = addEntry(entries, id, ElementalWeapons.DIVINEAXERHITTA, TIER_PRESTIGE, 3000, 1, 30);
-		id = addEntry(entries, id, ElementalWeapons.ABOMINABLESCYTHE, TIER_PRESTIGE, 3000, 1, 30);
-		id = addEntry(entries, id, ElementalWeapons.DIVINE_REAPER, TIER_PRESTIGE, 3000, 1, 30);
-		id = addEntry(entries, id, ElementalWeapons.ABOMINABLEGREATSABER, TIER_PRESTIGE, 3000, 1, 30);
-		id = addEntry(entries, id, ElementalWeapons.FROSTBLADE, TIER_PRESTIGE, 1500, 1, 14);
-		id = addEntry(entries, id, ElementalWeapons.FROSTSCYTHE, TIER_PRESTIGE, 1500, 1, 14);
-		id = addEntry(entries, id, ElementalWeapons.MOLTENBLADE, TIER_PRESTIGE, 1500, 1, 14);
-		id = addEntry(entries, id, ElementalWeapons.ABOMINABLEBLADE, TIER_PRESTIGE, 800, 2, 7);
-		id = addEntry(entries, id, ElementalWeapons.MOLTENSWORD, TIER_PRESTIGE, 800, 2, 7);
-		addEntry(entries, id, ElementalWeapons.FROSTAXE, TIER_PRESTIGE, 800, 2, 7);
+		// NOTE, flagged rather than silently accepted: at the current faucet
+		// rates these prices are effectively unreachable by farming (100k
+		// shards is ~20,000 hours at ~5/hour from mob grinding). They are
+		// only payable out of BOSS income — Warden pays 10,000, so 100k is
+		// ten Wardens. But a single Warden already drops a Tier 1 weapon at
+		// 100%, which is strictly better than the Tier 4 weapon these prices
+		// buy. As written, nobody has a reason to ever buy one. See
+		// CLAUDE.md's pricing note.
+		id = addEntry(entries, id, ElementalWeapons.ABOMINABLEBLADE, TIER_PRESTIGE, 200000, 1, 14);
+		id = addEntry(entries, id, ElementalWeapons.FROSTAXE, TIER_PRESTIGE, 150000, 1, 14);
+		addEntry(entries, id, ElementalWeapons.MOLTENSWORD, TIER_PRESTIGE, 100000, 1, 14);
 
 		return List.copyOf(entries);
 	}
