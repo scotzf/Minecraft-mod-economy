@@ -41,9 +41,6 @@ give @s pisomarket:bulwark_boots[enchantments={"minecraft:protection":5,"minecra
 give @s pisomarket:sunstone_shard 64
 # Waypoint block, for /warp testing
 give @s pisomarket:waypoint 2
-# The Shop block (its UI still works; /deposit and /withdraw are now
-# commands too, so the block is no longer the only way to reach the vault)
-give @s pisomarket:shop
 # Harvest boosters, normally only reachable via the shop
 give @s pisomarket:fortune_potion_i
 give @s pisomarket:fortune_potion_ii

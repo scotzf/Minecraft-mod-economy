@@ -80,6 +80,13 @@ public class PlayerLevels extends SavedData {
 		return p == null ? 0 : p.xp();
 	}
 
+	// Admin/testing setter. Clears XP progress within the level, since
+	// carrying a partial bar across an arbitrary jump is meaningless.
+	public void setLevel(final UUID player, final int level) {
+		progress.put(player, new Progress(Math.max(1, Math.min(level, MAX_LEVEL)), 0));
+		setDirty();
+	}
+
 	// Adds XP and returns how many levels were gained (0 if none). Loops
 	// rather than dividing, so a single huge XP award still only ever
 	// advances one level at a time and cannot skip past MAX_LEVEL.

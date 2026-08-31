@@ -183,8 +183,35 @@ public final class LevelManager {
 		});
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) ->
-				dispatcher.register(Commands.literal("level").executes(LevelManager::showLevel))
+				dispatcher.register(
+						Commands.literal("level")
+								.executes(LevelManager::showLevel)
+								// Admin-only, and purely so this can be VERIFIED in
+								// game — levelling to 50 legitimately takes tens of
+								// thousands of actions, which is not a testable loop.
+								.then(Commands.literal("set")
+										.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+										.then(Commands.argument("player", net.minecraft.commands.arguments.EntityArgument.player())
+												.then(Commands.argument("level", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, PlayerLevels.MAX_LEVEL))
+														.executes(LevelManager::setLevel))))
+				)
 		);
+	}
+
+	private static int setLevel(final CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+		ServerPlayer target = net.minecraft.commands.arguments.EntityArgument.getPlayer(context, "player");
+		int wanted = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "level");
+
+		PlayerLevels data = levels(context.getSource().getServer());
+		data.setLevel(target.getUUID(), wanted);
+		applyStats(target);
+		// Fill the new hearts, otherwise the extra capacity shows as empty
+		// and it looks like nothing happened.
+		target.setHealth(target.getMaxHealth());
+
+		context.getSource().sendSuccess(() -> PisoText.success("Set Piso level to ")
+				.append(PisoText.money(wanted)), true);
+		return 1;
 	}
 
 	private static int showLevel(final CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -193,7 +220,11 @@ public final class LevelManager {
 		int level = data.levelOf(player.getUUID());
 		int xp = data.xpOf(player.getUUID());
 
-		context.getSource().sendSuccess(() -> PisoText.body("Level ").append(PisoText.money(level)), false);
+		context.getSource().sendSuccess(() -> PisoText.body("Piso level ").append(PisoText.money(level)), false);
+		// Spelled out because this is NOT the green XP number in the HUD —
+		// that is vanilla's enchanting XP and drives nothing here.
+		context.getSource().sendSuccess(
+				() -> PisoText.hint("separate from your vanilla XP level (" + player.experienceLevel + ")"), false);
 
 		if (level < PlayerLevels.MAX_LEVEL) {
 			context.getSource().sendSuccess(() -> Component.literal(
@@ -202,11 +233,14 @@ public final class LevelManager {
 			context.getSource().sendSuccess(() -> PisoText.hint("Max level"), false);
 		}
 
-		context.getSource().sendSuccess(() -> Component.literal(
+		context.getSource().sendSuccess(() -> PisoText.name(
 				"+" + (int) (healthGrants(level) * HEALTH_PER_GRANT) + " health   "
 						+ "+" + String.format("%.2f", attackGrants(level) * ATTACK_PER_GRANT) + " attack   "
 						+ "+" + String.format("%.1f", toughnessGrants(level) * TOUGHNESS_PER_GRANT) + " toughness"
-		).withStyle(ChatFormatting.AQUA), false);
+		), false);
+		context.getSource().sendSuccess(
+				() -> PisoText.hint("max health now " + (int) player.getMaxHealth()
+						+ " (" + (int) (player.getMaxHealth() / 2) + " hearts)"), false);
 		return 1;
 	}
 }

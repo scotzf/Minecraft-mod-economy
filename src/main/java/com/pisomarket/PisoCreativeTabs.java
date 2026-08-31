@@ -9,7 +9,6 @@ import net.minecraft.world.item.ItemStack;
 import com.pisomarket.claims.ClaimsContent;
 import com.pisomarket.claims.DeedCatalog;
 import com.pisomarket.claims.LandDeedItem;
-import com.pisomarket.shop.PisoShopContent;
 
 // Puts this mod's items into the vanilla creative menu so they're findable
 // (and searchable) without commands. The Pointer is deliberately excluded —
@@ -20,9 +19,11 @@ public final class PisoCreativeTabs {
 	}
 
 	public static void register() {
-		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS).register(output ->
-				output.accept(new ItemStack(PisoShopContent.SHOP_BLOCK), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS)
-		);
+		// The Shop block is deliberately NOT listed. /shop opens the same UI
+		// now, so the block is redundant. It stays REGISTERED (and keeps its
+		// textures, models and blockstate) so any already-placed block in an
+		// existing world still works and still opens the menu — it is simply
+		// no longer obtainable: no recipe, no creative entry.
 
 		// Potions in the food/drink tab so they can be grabbed for testing
 		// without going through the BlackMarket every time.
