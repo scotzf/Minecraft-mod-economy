@@ -24,6 +24,8 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import com.pisomarket.PisoMarket;
 import com.pisomarket.economy.harvest.HarvestFaucet;
 
+import com.pisomarket.util.PisoText;
+
 // The level system: XP from farming, mob kills and PvP, spent automatically
 // on Max Health, Attack and Armor Toughness.
 //
@@ -144,7 +146,7 @@ public final class LevelManager {
 		}
 		applyStats(player);
 		int level = levels(server).levelOf(player.getUUID());
-		player.sendSystemMessage(Component.literal("Level " + level + "!").withStyle(ChatFormatting.GOLD));
+		player.sendSystemMessage(PisoText.success("Level ").append(PisoText.money(level)).append(PisoText.plain("!")));
 		player.level().playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP,
 				SoundSource.PLAYERS, 1.0F, 1.0F);
 	}
@@ -191,14 +193,13 @@ public final class LevelManager {
 		int level = data.levelOf(player.getUUID());
 		int xp = data.xpOf(player.getUUID());
 
-		context.getSource().sendSuccess(() -> Component.literal("Level ").withStyle(ChatFormatting.WHITE)
-				.append(Component.literal(String.valueOf(level)).withStyle(ChatFormatting.GOLD)), false);
+		context.getSource().sendSuccess(() -> PisoText.body("Level ").append(PisoText.money(level)), false);
 
 		if (level < PlayerLevels.MAX_LEVEL) {
 			context.getSource().sendSuccess(() -> Component.literal(
 					xp + " / " + PlayerLevels.xpToNext(level) + " XP").withStyle(ChatFormatting.DARK_GRAY), false);
 		} else {
-			context.getSource().sendSuccess(() -> Component.literal("Max level").withStyle(ChatFormatting.DARK_GRAY), false);
+			context.getSource().sendSuccess(() -> PisoText.hint("Max level"), false);
 		}
 
 		context.getSource().sendSuccess(() -> Component.literal(

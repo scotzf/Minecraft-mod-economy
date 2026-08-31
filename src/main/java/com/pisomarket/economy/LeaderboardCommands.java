@@ -10,6 +10,8 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 
+import com.pisomarket.util.PisoText;
+
 // /leaderboard — shows the last published wealth snapshot. Read-only; the board
 // itself is built by LeaderboardTracker every 2 in-game days.
 public final class LeaderboardCommands {
@@ -37,7 +39,7 @@ public final class LeaderboardCommands {
 		}
 
 		context.getSource().sendSuccess(
-				() -> Component.literal("Richest players").withStyle(ChatFormatting.GOLD),
+				() -> PisoText.body("Richest players"),
 				false
 		);
 
@@ -53,7 +55,8 @@ public final class LeaderboardCommands {
 				default -> ChatFormatting.GRAY;
 			};
 			context.getSource().sendSuccess(
-					() -> Component.literal(rank + ". " + entry.name() + " — " + entry.total()).withStyle(colour),
+					() -> PisoText.plain(rank + ". ").append(PisoText.name(entry.name()))
+							.append(PisoText.plain(" — ")).append(PisoText.money(entry.total())),
 					false
 			);
 		}

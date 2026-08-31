@@ -9,6 +9,8 @@ import net.minecraft.server.level.ServerPlayer;
 import com.pisomarket.economy.PisoVault;
 import com.pisomarket.economy.VaultSync;
 
+import com.pisomarket.util.PisoText;
+
 // Charges claim rent (see CLAUDE.md "Territory claims" and the notes on
 // Claim). Rent is only ever charged while the OWNER is online, so time
 // spent away is free — a player can take a two-week break and come back to
@@ -93,29 +95,29 @@ public final class RentCollector {
 				boolean wasUnpaid = claim.unpaidPeriods() > 0;
 				claims.setRentState(claim.id(), carried, 0);
 				VaultSync.sync(player);
-				player.sendSystemMessage(Component.literal(wasUnpaid
-						? "Rent paid for claim #" + claim.id() + " — protection is back on."
-						: "Rent: " + claim.rentPerPeriod() + " paid for claim #" + claim.id() + "."));
+				player.sendSystemMessage(wasUnpaid
+						? PisoText.success("Rent paid for claim ").append(PisoText.name("#" + claim.id()))
+								.append(PisoText.plain(" — protection is back on."))
+						: PisoText.success("Rent ").append(PisoText.money(claim.rentPerPeriod()))
+								.append(PisoText.plain(" paid for claim ")).append(PisoText.name("#" + claim.id())));
 				continue;
 			}
 
 			int unpaid = claim.unpaidPeriods() + 1;
 			if (unpaid >= Claim.RENT_GRACE_PERIODS) {
 				claims.remove(claim.id());
-				player.sendSystemMessage(Component.literal(
-						"Claim #" + claim.id() + " was released — rent went unpaid too long. "
-								+ "Everything you built is still there, but the land is no longer yours."
-				));
+				player.sendSystemMessage(PisoText.warning("Claim ").append(PisoText.name("#" + claim.id()))
+						.append(PisoText.plain(" was released — rent went unpaid too long. "
+								+ "Everything you built is still there, but the land is no longer yours.")));
 				continue;
 			}
 
 			claims.setRentState(claim.id(), carried, unpaid);
 			int periodsLeft = Claim.RENT_GRACE_PERIODS - unpaid;
-			player.sendSystemMessage(Component.literal(
-					"Can't pay " + claim.rentPerPeriod() + " rent for claim #" + claim.id()
-							+ " — protection is OFF until you do. Released after " + periodsLeft + " more missed payment"
-							+ (periodsLeft == 1 ? "" : "s") + "."
-			));
+			player.sendSystemMessage(PisoText.warning("Can't pay ").append(PisoText.money(claim.rentPerPeriod()))
+					.append(PisoText.plain(" rent for claim ")).append(PisoText.name("#" + claim.id()))
+					.append(PisoText.plain(" — protection is OFF until you do. Released after " + periodsLeft
+							+ " more missed payment" + (periodsLeft == 1 ? "" : "s") + ".")));
 		}
 	}
 }

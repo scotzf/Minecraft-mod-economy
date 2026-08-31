@@ -16,6 +16,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
+import com.pisomarket.util.PisoText;
+
 // /warp — return to the bound waypoint.
 //
 // Two limits, both deliberate:
@@ -45,7 +47,7 @@ public final class WarpCommand {
 		WaypointState waypoints = context.getSource().getServer().getDataStorage().computeIfAbsent(WaypointState.TYPE);
 
 		if (!waypoints.isBound(player.getUUID())) {
-			context.getSource().sendFailure(Component.literal("You have no waypoint bound. Right-click one to bind it."));
+			context.getSource().sendFailure(PisoText.failure("You have no waypoint bound. Right-click one to bind it."));
 			return 0;
 		}
 
@@ -54,7 +56,7 @@ public final class WarpCommand {
 		// comparison covers the rest of the 5-second window.
 		if (player.getLastHurtByMobTimestamp() > 0
 				&& player.tickCount - player.getLastHurtByMobTimestamp() < COMBAT_LOCK_TICKS) {
-			context.getSource().sendFailure(Component.literal("You took damage too recently to warp."));
+			context.getSource().sendFailure(PisoText.failure("You took damage too recently to warp."));
 			return 0;
 		}
 
@@ -62,7 +64,7 @@ public final class WarpCommand {
 		long last = waypoints.lastWarpTick(player.getUUID());
 		if (last > 0 && now - last < COOLDOWN_TICKS) {
 			long secondsLeft = (COOLDOWN_TICKS - (now - last)) / 20;
-			context.getSource().sendFailure(Component.literal(
+			context.getSource().sendFailure(PisoText.failure(
 					"Warp is on cooldown for another " + (secondsLeft / 60) + "m " + (secondsLeft % 60) + "s."));
 			return 0;
 		}
@@ -72,7 +74,7 @@ public final class WarpCommand {
 				ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,
 						Identifier.parse(dimensionId)));
 		if (target == null) {
-			context.getSource().sendFailure(Component.literal("That waypoint's world no longer exists."));
+			context.getSource().sendFailure(PisoText.failure("That waypoint's world no longer exists."));
 			return 0;
 		}
 
@@ -81,7 +83,7 @@ public final class WarpCommand {
 		// have run, and teleporting into empty air is worse than failing.
 		BlockPos pos = waypoints.posOf(player.getUUID());
 		if (!target.getBlockState(pos).is(WaypointContent.WAYPOINT_BLOCK)) {
-			context.getSource().sendFailure(Component.literal("Your waypoint is gone."));
+			context.getSource().sendFailure(PisoText.failure("Your waypoint is gone."));
 			return 0;
 		}
 
@@ -89,7 +91,7 @@ public final class WarpCommand {
 				java.util.Set.of(), player.getYRot(), player.getXRot(), false);
 		waypoints.markWarped(player.getUUID(), now);
 		context.getSource().sendSuccess(
-				() -> Component.literal("Warped.").withStyle(ChatFormatting.GREEN), false);
+				() -> PisoText.success("Warped."), false);
 		return 1;
 	}
 }

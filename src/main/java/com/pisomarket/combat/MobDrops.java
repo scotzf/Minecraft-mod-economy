@@ -306,9 +306,7 @@ public final class MobDrops {
 					payouts.recordFullPayout(killer.getUUID(), bossId, today);
 				} else {
 					count = (int) Math.max(1, count * REPEAT_PAYOUT_FRACTION);
-					killer.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-							"Reduced payout — you already claimed this boss recently.")
-							.withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+					killer.sendSystemMessage(com.pisomarket.util.PisoText.hint("Reduced payout — you already claimed this boss recently."));
 				}
 			}
 

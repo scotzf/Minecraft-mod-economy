@@ -15,6 +15,8 @@ import com.pisomarket.claims.Claim;
 import com.pisomarket.claims.ChestAccess;
 import com.pisomarket.claims.PisoClaims;
 
+import com.pisomarket.util.PisoText;
+
 // Enforces the claim's chest policy (see ChestAccess) on every chest inside
 // that claim. Replaces the old per-chest Lock item: the setting now lives on
 // the claim and is edited from the Land Deed book, so there's nothing to
@@ -73,7 +75,7 @@ public final class ChestAccessGuard {
 
 			boolean trusted = claim.trusted().containsKey(serverPlayer.getUUID());
 			if (!trusted || access == ChestAccess.OWNER_ONLY) {
-				serverPlayer.sendSystemMessage(Component.literal("This chest is locked"));
+				serverPlayer.sendSystemMessage(PisoText.failure("This chest is locked"));
 				return InteractionResult.FAIL;
 			}
 

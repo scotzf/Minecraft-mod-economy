@@ -22,6 +22,8 @@ import com.pisomarket.economy.PisoVault;
 import com.pisomarket.economy.VaultSync;
 import com.pisomarket.util.InventoryUtil;
 
+import com.pisomarket.util.PisoText;
+
 // Registers /market list, browse, buy, mine, cancel. See CLAUDE.md's
 // "In-game command surface" for the documented behavior of each.
 public final class MarketCommands {
@@ -83,7 +85,7 @@ public final class MarketCommands {
 
 		ItemStack held = player.getMainHandItem();
 		if (held.isEmpty()) {
-			context.getSource().sendFailure(Component.literal("You must be holding the item you want to sell"));
+			context.getSource().sendFailure(PisoText.failure("You must be holding the item you want to sell"));
 			return 0;
 		}
 
@@ -91,7 +93,8 @@ public final class MarketCommands {
 		player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
 
 		int id = createListing(context.getSource().getServer(), player.getUUID(), toList, price);
-		context.getSource().sendSuccess(() -> Component.literal("Listed as #" + id + " for " + price), false);
+		context.getSource().sendSuccess(() -> PisoText.success("Listed as ").append(PisoText.name("#" + id))
+				.append(PisoText.plain(" for ")).append(PisoText.money(price)), false);
 		return 1;
 	}
 
@@ -117,7 +120,7 @@ public final class MarketCommands {
 
 	private static void sendPage(final CommandSourceStack source, final List<MarketListing> all, final int page, final String heading) {
 		if (all.isEmpty()) {
-			source.sendSuccess(() -> Component.literal(heading + ": nothing listed"), false);
+			source.sendSuccess(() -> PisoText.body(heading + ": nothing listed"), false);
 			return;
 		}
 
@@ -126,7 +129,7 @@ public final class MarketCommands {
 		int from = (clampedPage - 1) * PAGE_SIZE;
 		int to = Math.min(from + PAGE_SIZE, all.size());
 
-		source.sendSuccess(() -> Component.literal(heading + " (page " + clampedPage + "/" + totalPages + ")"), false);
+		source.sendSuccess(() -> PisoText.body(heading).append(PisoText.hint("  page " + clampedPage + "/" + totalPages)), false);
 		for (MarketListing listing : all.subList(from, to)) {
 			String line = "#" + listing.id() + " — " + listing.stack().getCount() + "x "
 					+ listing.stack().getHoverName().getString() + " — " + listing.price();
@@ -140,11 +143,11 @@ public final class MarketCommands {
 
 		String error = tryBuy(context.getSource().getServer(), buyer, id);
 		if (error != null) {
-			context.getSource().sendFailure(Component.literal(error));
+			context.getSource().sendFailure(PisoText.failure(error));
 			return 0;
 		}
 
-		context.getSource().sendSuccess(() -> Component.literal("Bought #" + id), false);
+		context.getSource().sendSuccess(() -> PisoText.success("Bought ").append(PisoText.name("#" + id)), false);
 		return 1;
 	}
 
@@ -178,10 +181,12 @@ public final class MarketCommands {
 			int claimId = com.pisomarket.claims.DeedProtection.claimIdOf(listing.stack());
 			server.getDataStorage().computeIfAbsent(com.pisomarket.claims.PisoClaims.TYPE)
 					.transferOwnership(claimId, buyer.getUUID());
-			buyer.sendSystemMessage(Component.literal("You now own claim #" + claimId + " and everything built on it."));
+			buyer.sendSystemMessage(PisoText.success("You now own claim ").append(PisoText.name("#" + claimId))
+					.append(PisoText.plain(" and everything built on it.")));
 			ServerPlayer previousOwner = server.getPlayerList().getPlayer(listing.seller());
 			if (previousOwner != null) {
-				previousOwner.sendSystemMessage(Component.literal("Claim #" + claimId + " was sold and is no longer yours."));
+				previousOwner.sendSystemMessage(PisoText.warning("Claim ").append(PisoText.name("#" + claimId))
+						.append(PisoText.plain(" was sold and is no longer yours.")));
 			}
 		}
 
@@ -198,7 +203,7 @@ public final class MarketCommands {
 		ServerPlayer player = context.getSource().getPlayerOrException();
 		MarketListing listing = listings(context.getSource().getServer()).get(id);
 		if (listing == null || !listing.seller().equals(player.getUUID())) {
-			context.getSource().sendFailure(Component.literal("No listing #" + id + " of yours"));
+			context.getSource().sendFailure(PisoText.failure("No listing #" + id + " of yours"));
 			return 0;
 		}
 
@@ -215,17 +220,17 @@ public final class MarketCommands {
 		PisoMarketListings listingStore = listings(context.getSource().getServer());
 		MarketListing listing = listingStore.get(id);
 		if (listing == null || !listing.seller().equals(player.getUUID())) {
-			context.getSource().sendFailure(Component.literal("No listing #" + id + " of yours"));
+			context.getSource().sendFailure(PisoText.failure("No listing #" + id + " of yours"));
 			return 0;
 		}
 
 		if (!InventoryUtil.giveItem(player, listing.stack())) {
-			context.getSource().sendFailure(Component.literal("No inventory space — listing left active"));
+			context.getSource().sendFailure(PisoText.failure("No inventory space — listing left active"));
 			return 0;
 		}
 
 		listingStore.remove(id);
-		context.getSource().sendSuccess(() -> Component.literal("Cancelled #" + id), false);
+		context.getSource().sendSuccess(() -> PisoText.success("Cancelled ").append(PisoText.name("#" + id)), false);
 		return 1;
 	}
 

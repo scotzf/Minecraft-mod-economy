@@ -24,6 +24,8 @@ import net.minecraft.world.phys.BlockHitResult;
 
 import com.pisomarket.PisoMarket;
 
+import com.pisomarket.util.PisoText;
+
 // The Waypoint block — fast travel infrastructure.
 //
 // PUBLIC BY DESIGN. Anyone who can physically reach a waypoint can bind to
@@ -74,7 +76,7 @@ public final class WaypointContent {
 
 			WaypointState waypoints = level.getServer().getDataStorage().computeIfAbsent(WaypointState.TYPE);
 			waypoints.bind(serverPlayer.getUUID(), level.dimension().identifier().toString(), pos);
-			serverPlayer.sendSystemMessage(Component.literal("Waypoint bound. /warp returns you here."));
+			serverPlayer.sendSystemMessage(PisoText.success("Waypoint bound. ").append(PisoText.hint("/warp returns you here.")));
 			return InteractionResult.SUCCESS;
 		}
 

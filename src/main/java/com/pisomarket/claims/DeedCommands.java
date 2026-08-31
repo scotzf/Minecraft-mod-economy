@@ -14,6 +14,8 @@ import net.minecraft.world.item.ItemStack;
 import com.pisomarket.economy.PisoVault;
 import com.pisomarket.util.InventoryUtil;
 
+import com.pisomarket.util.PisoText;
+
 // Registers /deed browse and /deed buy <id> — buying a Land Deed from
 // BlackMarket. Separate from ShopCommands because deeds need a
 // custom-built ItemStack (size baked into CUSTOM_DATA), not a plain
@@ -46,13 +48,13 @@ public final class DeedCommands {
 		ServerPlayer player = context.getSource().getPlayerOrException();
 		ItemStack held = player.getMainHandItem();
 		if (!(held.getItem() instanceof LandDeedItem)) {
-			context.getSource().sendFailure(Component.literal("Hold the Land Deed you want to activate."));
+			context.getSource().sendFailure(PisoText.failure("Hold the Land Deed you want to activate."));
 			return 0;
 		}
 
 		String error = LandDeedItem.confirmPendingClaim(player, held);
 		if (error != null) {
-			context.getSource().sendFailure(Component.literal(error));
+			context.getSource().sendFailure(PisoText.failure(error));
 			return 0;
 		}
 		return 1;
@@ -64,12 +66,12 @@ public final class DeedCommands {
 		if (held.getItem() instanceof LandDeedItem) {
 			LandDeedItem.cancelPendingClaim(held);
 		}
-		context.getSource().sendSuccess(() -> Component.literal("Claim cancelled — nothing was claimed."), false);
+		context.getSource().sendSuccess(() -> PisoText.body("Claim cancelled — nothing was claimed."), false);
 		return 1;
 	}
 
 	private static int browse(final CommandContext<CommandSourceStack> context) {
-		context.getSource().sendSuccess(() -> Component.literal("Land Deeds (BlackMarket)"), false);
+		context.getSource().sendSuccess(() -> PisoText.body("Land Deeds"), false);
 		for (DeedCatalog.DeedSize size : DeedCatalog.SIZES) {
 			String line = "#" + size.id() + " — " + size.label() + " (" + size.width() + "x" + size.length() + "x" + size.height() + ") — " + size.price();
 			context.getSource().sendSuccess(() -> Component.literal(line), false);
@@ -81,10 +83,10 @@ public final class DeedCommands {
 		ServerPlayer player = context.getSource().getPlayerOrException();
 		String error = tryBuy(player, id);
 		if (error != null) {
-			context.getSource().sendFailure(Component.literal(error));
+			context.getSource().sendFailure(PisoText.failure(error));
 			return 0;
 		}
-		context.getSource().sendSuccess(() -> Component.literal("Bought a deed — right-click the ground where you want to claim it"), false);
+		context.getSource().sendSuccess(() -> PisoText.success("Bought a deed").append(PisoText.hint("  right-click the ground where you want to claim it")), false);
 		return 1;
 	}
 

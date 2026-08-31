@@ -18,6 +18,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.NameAndId;
 import net.minecraft.world.item.ItemStack;
 
+import com.pisomarket.util.PisoText;
+
 // Registers /claims, /trust, /untrust, /unclaim — see CLAUDE.md "In-game
 // command surface". All four act on whichever claim the player is
 // currently standing in, not by id — simpler than tracking ids for a
@@ -79,10 +81,10 @@ public final class ClaimCommands {
 		ServerPlayer player = context.getSource().getPlayerOrException();
 		List<Claim> mine = claims(player).byOwner(player.getUUID());
 		if (mine.isEmpty()) {
-			context.getSource().sendSuccess(() -> Component.literal("You don't own any claims"), false);
+			context.getSource().sendSuccess(() -> PisoText.body("You don't own any claims"), false);
 			return 1;
 		}
-		context.getSource().sendSuccess(() -> Component.literal("Your claims:"), false);
+		context.getSource().sendSuccess(() -> PisoText.body("Your claims:"), false);
 		for (Claim claim : mine) {
 			int w = claim.maxX() - claim.minX() + 1;
 			int l = claim.maxZ() - claim.minZ() + 1;
@@ -108,7 +110,7 @@ public final class ClaimCommands {
 		ServerPlayer player = context.getSource().getPlayerOrException();
 		Claim claim = claimHereOwnedBy(player);
 		if (claim == null) {
-			context.getSource().sendFailure(Component.literal("Stand inside a claim you own to use this"));
+			context.getSource().sendFailure(PisoText.failure("Stand inside a claim you own to use this"));
 			return 0;
 		}
 
@@ -117,14 +119,16 @@ public final class ClaimCommands {
 		try {
 			level = TrustLevel.valueOf(levelArg);
 		} catch (IllegalArgumentException e) {
-			context.getSource().sendFailure(Component.literal("Level must be place, destroy, or both"));
+			context.getSource().sendFailure(PisoText.failure("Level must be place, destroy, or both"));
 			return 0;
 		}
 
 		NameAndId target = GameProfileArgument.getGameProfiles(context, "player").iterator().next();
 		claims(player).setTrust(claim.id(), target.id(), target.name(), level);
 		String name = target.name();
-		context.getSource().sendSuccess(() -> Component.literal("Trusted " + name + " (" + levelArg.toLowerCase() + ") on claim #" + claim.id()), false);
+		context.getSource().sendSuccess(() -> PisoText.success("Trusted ").append(PisoText.name(name))
+				.append(PisoText.plain(" (" + levelArg.toLowerCase() + ") on claim "))
+				.append(PisoText.name("#" + claim.id())), false);
 		return 1;
 	}
 
@@ -132,14 +136,15 @@ public final class ClaimCommands {
 		ServerPlayer player = context.getSource().getPlayerOrException();
 		Claim claim = claimHereOwnedBy(player);
 		if (claim == null) {
-			context.getSource().sendFailure(Component.literal("Stand inside a claim you own to use this"));
+			context.getSource().sendFailure(PisoText.failure("Stand inside a claim you own to use this"));
 			return 0;
 		}
 
 		NameAndId target = GameProfileArgument.getGameProfiles(context, "player").iterator().next();
 		claims(player).setTrust(claim.id(), target.id(), target.name(), null);
 		String name = target.name();
-		context.getSource().sendSuccess(() -> Component.literal("Untrusted " + name + " on claim #" + claim.id()), false);
+		context.getSource().sendSuccess(() -> PisoText.success("Untrusted ").append(PisoText.name(name))
+				.append(PisoText.plain(" on claim ")).append(PisoText.name("#" + claim.id())), false);
 		return 1;
 	}
 
@@ -147,7 +152,7 @@ public final class ClaimCommands {
 		ServerPlayer player = context.getSource().getPlayerOrException();
 		Claim claim = claimHereOwnedBy(player);
 		if (claim == null) {
-			context.getSource().sendFailure(Component.literal("Stand inside a claim you own to use this"));
+			context.getSource().sendFailure(PisoText.failure("Stand inside a claim you own to use this"));
 			return 0;
 		}
 
@@ -170,7 +175,7 @@ public final class ClaimCommands {
 		ServerPlayer player = context.getSource().getPlayerOrException();
 		Claim claim = claimHereOwnedBy(player);
 		if (claim == null) {
-			context.getSource().sendFailure(Component.literal("Stand inside a claim you own to use this"));
+			context.getSource().sendFailure(PisoText.failure("Stand inside a claim you own to use this"));
 			return 0;
 		}
 
@@ -183,12 +188,13 @@ public final class ClaimCommands {
 			default -> null;
 		};
 		if (access == null) {
-			context.getSource().sendFailure(Component.literal("Mode must be owneronly, putonly, putandget, or open"));
+			context.getSource().sendFailure(PisoText.failure("Mode must be owneronly, putonly, putandget, or open"));
 			return 0;
 		}
 
 		claims(player).setChestAccess(claim.id(), access);
-		context.getSource().sendSuccess(() -> Component.literal("Chests in claim #" + claim.id() + ": " + access.label()), false);
+		context.getSource().sendSuccess(() -> PisoText.body("Chests in claim ").append(PisoText.name("#" + claim.id()))
+				.append(PisoText.plain(": " + access.label())), false);
 		return 1;
 	}
 
@@ -196,12 +202,13 @@ public final class ClaimCommands {
 		ServerPlayer player = context.getSource().getPlayerOrException();
 		Claim claim = claimHereOwnedBy(player);
 		if (claim == null) {
-			context.getSource().sendFailure(Component.literal("Stand inside a claim you own to use this"));
+			context.getSource().sendFailure(PisoText.failure("Stand inside a claim you own to use this"));
 			return 0;
 		}
 
 		claims(player).remove(claim.id());
-		context.getSource().sendSuccess(() -> Component.literal("Claim #" + claim.id() + " released"), false);
+		context.getSource().sendSuccess(() -> PisoText.success("Claim ").append(PisoText.name("#" + claim.id()))
+				.append(PisoText.plain(" released")), false);
 		return 1;
 	}
 }

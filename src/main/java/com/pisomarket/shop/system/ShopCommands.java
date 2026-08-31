@@ -19,6 +19,8 @@ import com.pisomarket.economy.PisoVault;
 import com.pisomarket.economy.VaultSync;
 import com.pisomarket.util.InventoryUtil;
 
+import com.pisomarket.util.PisoText;
+
 // Registers /shop browse [tier] and /shop buy <id> [qty]. See CLAUDE.md's
 // "System shop catalog" and ShopEntry's scope note for what's actually in
 // the catalog right now.
@@ -59,12 +61,12 @@ public final class ShopCommands {
 				.collect(Collectors.toList());
 
 		if (shown.isEmpty()) {
-			context.getSource().sendSuccess(() -> Component.literal("BlackMarket: nothing in that tier"), false);
+			context.getSource().sendSuccess(() -> PisoText.body("BlackMarket: nothing in that tier"), false);
 			return 1;
 		}
 
 		PisoShopStock stock = stock(context.getSource().getServer());
-		context.getSource().sendSuccess(() -> Component.literal("BlackMarket"), false);
+		context.getSource().sendSuccess(() -> PisoText.body("BlackMarket"), false);
 		for (ShopEntry entry : shown) {
 			int remaining = stock.remainingFor(context.getSource().getServer(), entry);
 			String line = "#" + entry.id() + " — " + ShopStacks.build(context.getSource().getServer(), entry, 1).getHoverName().getString()
@@ -80,11 +82,11 @@ public final class ShopCommands {
 
 		String error = tryBuy(context.getSource().getServer(), player, id, qty);
 		if (error != null) {
-			context.getSource().sendFailure(Component.literal(error));
+			context.getSource().sendFailure(PisoText.failure(error));
 			return 0;
 		}
 
-		context.getSource().sendSuccess(() -> Component.literal("Bought " + qty + "x #" + id), false);
+		context.getSource().sendSuccess(() -> PisoText.success("Bought " + qty + "x ").append(PisoText.name("#" + id)), false);
 		return 1;
 	}
 
