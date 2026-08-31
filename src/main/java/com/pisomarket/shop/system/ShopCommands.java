@@ -32,6 +32,11 @@ public final class ShopCommands {
 		CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) -> {
 			dispatcher.register(
 					Commands.literal("shop")
+							// Bare /shop opens the UI. Without this the literal has
+							// no executes() at all, so typing just "/shop" failed as
+							// an incomplete command — the subcommands were the only
+							// runnable forms.
+							.executes(ShopCommands::openUi)
 							.then(
 									Commands.literal("browse")
 											.executes(context -> browse(context, -1))
@@ -53,6 +58,27 @@ public final class ShopCommands {
 							)
 			);
 		});
+	}
+
+	// Opens the same menu the Shop block opens, so the block is no longer
+	// the only way in. The block still works — this is an additional door,
+	// not a replacement.
+	private static int openUi(final CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+		ServerPlayer player = context.getSource().getPlayerOrException();
+		player.openMenu(new net.minecraft.world.MenuProvider() {
+			@Override
+			public Component getDisplayName() {
+				return Component.literal("Piso Market");
+			}
+
+			@Override
+			public net.minecraft.world.inventory.AbstractContainerMenu createMenu(
+					final int syncId, final net.minecraft.world.entity.player.Inventory inventory,
+					final net.minecraft.world.entity.player.Player menuPlayer) {
+				return new com.pisomarket.shop.PisoShopMenu(syncId, inventory);
+			}
+		});
+		return 1;
 	}
 
 	private static int browse(final CommandContext<CommandSourceStack> context, final int tierFilter) {
