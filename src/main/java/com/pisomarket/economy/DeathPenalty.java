@@ -20,7 +20,12 @@ import com.pisomarket.util.PisoText;
 // standing there. On any other death it is destroyed.
 public final class DeathPenalty {
 	// Fraction of the victim's vault balance lost on death.
-	public static final double DEATH_LOSS_FRACTION = 0.10;
+	//
+	// 25%, not 10%. At 10% a player with a million banked shrugged off a
+	// lava death, and a PvP win returned too little to be worth the risk of
+	// starting the fight. A quarter is enough that carrying a large balance
+	// into danger is a real decision either way.
+	public static final double DEATH_LOSS_FRACTION = 0.25;
 
 	private DeathPenalty() {
 	}

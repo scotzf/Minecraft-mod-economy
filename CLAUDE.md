@@ -229,6 +229,34 @@ Rusty Java, strong Python / Dart / Django background. When writing code here:
 
 ## Currency design
 
+**SUPERSEDED 2026-08-31 — read this box before anything below it.**
+
+Currency is now the **Sunstone Shard**, and it is a **pure balance, not an
+item you carry**. Harvesting and mob kills credit the vault directly, the
+way vanilla XP does. There is no inventory stack, no `/deposit`, no
+`/withdraw`, and no Vault tab in the shop UI — every path out of the vault
+was removed on purpose (see below). The Shard item stays registered but
+unobtainable, because the HUD balance indicator renders an ItemStack for
+its icon.
+
+**Dying costs 25% of your balance.** On a PvP kill it TRANSFERS to the
+killer, mirroring how vanilla XP orbs drop for whoever is standing there;
+any other death destroys it (`DeathPenalty`). This tax is load-bearing,
+not flavour: once currency became a balance nothing could destroy it any
+more, so every faucet was pure inflation with no counterweight.
+
+**Why no withdraw path exists.** If Shards could be turned back into
+items, the optimal play would be to hold all wealth as items and never pay
+the death tax, which would kill the mechanic outright. That is the whole
+reason the deposit/withdraw surface is gone rather than merely unused.
+
+Consequences accepted with this change: money can no longer be stolen from
+chests, dropped, or handed over physically, and `/donate` is now the only
+player-to-player transfer. Everything in the rest of this section describes
+the OLD physical-item design and is kept only as history.
+
+---
+
 **The currency is the poisonous potato item itself.** Money is a physical stack
 in a player's inventory. There is no virtual balance as the primary store of
 value.
