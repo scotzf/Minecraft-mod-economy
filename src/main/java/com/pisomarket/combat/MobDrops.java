@@ -102,8 +102,8 @@ public final class MobDrops {
 	// Armor chance for the structure-gated "rare" band, derived from the
 	// mob's own buffed max health rather than hand-set per mob: a tougher
 	// fight is worth better odds, and one formula stays consistent if mob
-	// HP is ever retuned. Capped so nothing in this band beats the
-	// hand-set 10% on Blaze / Wither Skeleton.
+	// HP is ever retuned. Capped at 15% — these are one-off structure
+	// fights, not farmable the way Blaze and Wither Skeleton are.
 	private static double armorChanceFromHealth(final LivingEntity mob) {
 		double hp = mob.getMaxHealth();
 		return Math.min(0.15, hp / 1000.0);
@@ -163,14 +163,17 @@ public final class MobDrops {
 		}
 
 		// --- Uncommon. Three of these carry the hand-set armor chances.
+		// Blaze and Wither Skeleton sit at 1%, NOT 10%: both are
+		// spawner-farmable in fortresses, and at 10% a full four-piece set
+		// was about forty kills — an afternoon. At 1% it is a few hundred.
 		if (type == EntityTypes.WITCH || type == EntityTypes.ENDERMAN) {
 			return Drop.shards(0.20, 1, 3);
 		}
 		if (type == EntityTypes.BLAZE) {
-			return Drop.shards(0.15, 1, 2).withArmor(0.10, ArmorSet.AEGIS);
+			return Drop.shards(0.15, 1, 2).withArmor(0.01, ArmorSet.AEGIS);
 		}
 		if (type == EntityTypes.WITHER_SKELETON) {
-			return Drop.shards(0.15, 1, 2).withArmor(0.10, ArmorSet.BULWARK);
+			return Drop.shards(0.15, 1, 2).withArmor(0.01, ArmorSet.BULWARK);
 		}
 		if (type == EntityTypes.GHAST) {
 			return Drop.shards(0.15, 1, 2);
