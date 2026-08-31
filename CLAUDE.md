@@ -1051,11 +1051,13 @@ unbuilt work, not a config change).
 | Beetroot | 5% | |
 | Nether Wart | 10% | Nether-only access is its own barrier already, priced in |
 
-Melon/pumpkin/sugar cane/cocoa/sweet berries/glow berries are explicitly
-**not** in this list yet — they're the renewable crops (harvest without
-replanting, see the growth-mechanics table this session worked out) and
-were flagged as needing either a lower chance or a hard cap so they don't
-dominate the faucet the way an unbounded automated farm would. Still open.
+Melon/pumpkin/sugar cane/cocoa/sweet berries/glow berries are **DECIDED
+OUT, 2026-08-31** — not pending, not an oversight. They are the renewable
+crops: harvesting does not consume the plant, so one large farm produces
+forever at no ongoing cost. Only replant-required crops pay, which keeps
+the faucet tied to real effort per harvest. The comment in
+`HarvestFaucet.baseChanceFor` says the same thing, so nobody "completes
+the set" by adding them later.
 
 **Pricing baseline, established this session:** a 9×9 (81-crop) carrot
 plot with no buffs earns roughly 2 Shards per full harvest cycle
