@@ -13,12 +13,13 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.equipment.ArmorType;
 
 import com.pisomarket.economy.PisoCurrency;
+import com.pisomarket.economy.harvest.PisoEffects;
 import com.pisomarket.economy.harvest.PisoLuck;
 
-// The second faucet: Shards and custom weapons from mob kills. Rarest mobs
-// drop the rarest weapons.
+// The second faucet: Shards, custom weapons and custom armor from mob kills.
 //
 // THREE SAFEGUARDS, all load-bearing. Without them this table is an
 // infinite money loop, so none of them are optional:
@@ -31,8 +32,7 @@ import com.pisomarket.economy.harvest.PisoLuck;
 //    craftable from blocks, so any drop on them is literally an
 //    iron-for-money printer.
 // 3. PASSIVE MOBS DROP NOTHING. They breed infinitely and cost nothing to
-//    kill. Handled by omission — anything not in the table below pays out
-//    zero.
+//    kill. Handled by omission — anything not in the table below pays zero.
 public final class MobDrops {
 	// Weapon rarity pools, matching the tiers in CLAUDE.md's combat spec.
 	private static final List<Item> TIER_1 = List.of(
@@ -45,99 +45,175 @@ public final class MobDrops {
 	private static final List<Item> TIER_4 = List.of(
 			ElementalWeapons.ABOMINABLEBLADE, ElementalWeapons.MOLTENSWORD, ElementalWeapons.FROSTAXE);
 
-	// One row of the drop table. shardChance <= 0 means "always pay
-	// shardMin..shardMax" (used for bosses and guaranteed rare drops);
-	// otherwise it is rolled per kill.
-	private record Drop(double shardChance, int shardMin, int shardMax,
+	private static final ArmorType[] PIECES = {
+			ArmorType.HELMET, ArmorType.CHESTPLATE, ArmorType.LEGGINGS, ArmorType.BOOTS};
+
+	// Which armor set a drop comes from. Armor always drops as ONE random
+	// piece, never a full set — a whole set from a single kill would make
+	// the hardest gear in the game a one-fight reward.
+	private enum ArmorSet {
+		SENTINEL, AEGIS, BULWARK;
+
+		Item randomPiece() {
+			ArmorType type = PIECES[ThreadLocalRandom.current().nextInt(PIECES.length)];
+			return switch (this) {
+				case SENTINEL -> CustomArmorContent.gold(type);
+				case AEGIS -> CustomArmorContent.diamond(type);
+				case BULWARK -> CustomArmorContent.netherite(type);
+			};
+		}
+	}
+
+	// One row of the drop table. shardChance < 0 means "always pay
+	// shardMin"; otherwise it is rolled per kill.
+	private record Drop(
+			double shardChance, int shardMin, int shardMax,
 			double weaponChance, List<Item> weaponPool,
-			double secondWeaponChance, List<Item> secondWeaponPool) {
+			double secondWeaponChance, List<Item> secondWeaponPool,
+			double armorChance, ArmorSet armorSet) {
 
 		static Drop shards(final double chance, final int min, final int max) {
-			return new Drop(chance, min, max, 0.0, List.of(), 0.0, List.of());
+			return new Drop(chance, min, max, 0.0, List.of(), 0.0, List.of(), 0.0, null);
 		}
 
-		static Drop guaranteed(final int shards, final double weaponChance, final List<Item> pool) {
-			return new Drop(-1.0, shards, shards, weaponChance, pool, 0.0, List.of());
+		static Drop flat(final int shards) {
+			return new Drop(-1.0, shards, shards, 0.0, List.of(), 0.0, List.of(), 0.0, null);
 		}
 
-		static Drop boss(final int shards, final double weaponChance, final List<Item> pool,
-				final double rareChance, final List<Item> rarePool) {
-			return new Drop(-1.0, shards, shards, weaponChance, pool, rareChance, rarePool);
+		Drop withWeapon(final double chance, final List<Item> pool) {
+			return new Drop(shardChance, shardMin, shardMax, chance, pool,
+					secondWeaponChance, secondWeaponPool, armorChance, armorSet);
 		}
 
-		static Drop rare(final double chance, final int min, final int max,
-				final double weaponChance, final List<Item> pool) {
-			return new Drop(chance, min, max, weaponChance, pool, 0.0, List.of());
+		Drop withRareWeapon(final double chance, final List<Item> pool) {
+			return new Drop(shardChance, shardMin, shardMax, weaponChance, weaponPool,
+					chance, pool, armorChance, armorSet);
+		}
+
+		Drop withArmor(final double chance, final ArmorSet set) {
+			return new Drop(shardChance, shardMin, shardMax, weaponChance, weaponPool,
+					secondWeaponChance, secondWeaponPool, chance, set);
 		}
 	}
 
 	private MobDrops() {
 	}
 
+	// Armor chance for the structure-gated "rare" band, derived from the
+	// mob's own buffed max health rather than hand-set per mob: a tougher
+	// fight is worth better odds, and one formula stays consistent if mob
+	// HP is ever retuned. Capped so nothing in this band beats the
+	// hand-set 10% on Blaze / Wither Skeleton.
+	private static double armorChanceFromHealth(final LivingEntity mob) {
+		double hp = mob.getMaxHealth();
+		return Math.min(0.15, hp / 1000.0);
+	}
+
+	// Which set a rare mob drops, also scaled by how hard it hits back.
+	private static ArmorSet armorSetFromHealth(final LivingEntity mob) {
+		double hp = mob.getMaxHealth();
+		if (hp >= 100) {
+			return ArmorSet.BULWARK;
+		}
+		if (hp >= 50) {
+			return ArmorSet.AEGIS;
+		}
+		return ArmorSet.SENTINEL;
+	}
+
 	private static Drop tableFor(final EntityType<?> type) {
-		// --- Bosses
+		// --- Bosses. Tier 1 mobs drop armor at 100% alongside their weapon.
 		if (type == EntityTypes.WARDEN) {
-			return Drop.guaranteed(10000, 1.0, TIER_1);
+			return Drop.flat(10000).withWeapon(1.0, TIER_1).withArmor(1.0, ArmorSet.BULWARK);
 		}
 		if (type == EntityTypes.ENDER_DRAGON) {
-			return Drop.boss(5000, 0.50, TIER_2, 0.05, TIER_1);
+			return Drop.flat(5000).withWeapon(0.50, TIER_2).withRareWeapon(0.05, TIER_1)
+					.withArmor(1.0, ArmorSet.BULWARK);
 		}
 		if (type == EntityTypes.WITHER) {
-			return Drop.boss(3000, 0.40, TIER_2, 0.03, TIER_1);
+			return Drop.flat(3000).withWeapon(0.40, TIER_2).withRareWeapon(0.03, TIER_1)
+					.withArmor(1.0, ArmorSet.AEGIS);
 		}
 
-		// --- Very rare / structure-gated
+		// --- Very rare / structure-gated. Armor chance is HP-derived and
+		// applied at award time (see awardArmor), so these rows leave it 0.
 		if (type == EntityTypes.ELDER_GUARDIAN) {
-			return Drop.guaranteed(500, 0.15, TIER_2);
+			return Drop.flat(500).withWeapon(0.15, TIER_2);
 		}
 		if (type == EntityTypes.RAVAGER) {
-			return Drop.guaranteed(300, 0.10, TIER_3);
+			return Drop.flat(300).withWeapon(0.10, TIER_3);
 		}
 		if (type == EntityTypes.EVOKER) {
-			return Drop.guaranteed(100, 0.08, TIER_3);
+			return Drop.flat(100).withWeapon(0.08, TIER_3);
 		}
 		if (type == EntityTypes.PIGLIN_BRUTE) {
-			return Drop.guaranteed(80, 0.05, TIER_4);
+			return Drop.flat(80).withWeapon(0.05, TIER_4);
 		}
 		if (type == EntityTypes.BREEZE) {
-			return Drop.guaranteed(60, 0.05, TIER_3);
+			return Drop.flat(60).withWeapon(0.05, TIER_3);
 		}
 		if (type == EntityTypes.SHULKER) {
-			return Drop.guaranteed(60, 0.0, List.of());
+			return Drop.flat(60);
 		}
 		if (type == EntityTypes.GUARDIAN) {
-			return Drop.guaranteed(40, 0.03, TIER_4);
+			return Drop.flat(40).withWeapon(0.03, TIER_4);
 		}
 		if (type == EntityTypes.VINDICATOR || type == EntityTypes.PILLAGER || type == EntityTypes.ILLUSIONER) {
-			return Drop.guaranteed(30, 0.0, List.of());
+			return Drop.flat(30);
 		}
 
-		// --- Uncommon
+		// --- Uncommon. Three of these carry the hand-set armor chances.
 		if (type == EntityTypes.WITCH || type == EntityTypes.ENDERMAN) {
 			return Drop.shards(0.20, 1, 3);
 		}
-		if (type == EntityTypes.BLAZE || type == EntityTypes.WITHER_SKELETON || type == EntityTypes.GHAST) {
+		if (type == EntityTypes.BLAZE) {
+			return Drop.shards(0.15, 1, 2).withArmor(0.10, ArmorSet.AEGIS);
+		}
+		if (type == EntityTypes.WITHER_SKELETON) {
+			return Drop.shards(0.15, 1, 2).withArmor(0.10, ArmorSet.BULWARK);
+		}
+		if (type == EntityTypes.GHAST) {
 			return Drop.shards(0.15, 1, 2);
 		}
 		if (type == EntityTypes.HOGLIN || type == EntityTypes.ZOGLIN) {
 			return Drop.shards(0.12, 1, 2);
 		}
-		if (type == EntityTypes.PHANTOM || type == EntityTypes.PIGLIN || type == EntityTypes.SLIME
+		if (type == EntityTypes.PHANTOM) {
+			return Drop.shards(0.10, 1, 1).withArmor(0.01, ArmorSet.SENTINEL);
+		}
+		if (type == EntityTypes.PIGLIN || type == EntityTypes.SLIME
 				|| type == EntityTypes.MAGMA_CUBE || type == EntityTypes.CAVE_SPIDER || type == EntityTypes.STRAY
 				|| type == EntityTypes.BOGGED || type == EntityTypes.HUSK || type == EntityTypes.DROWNED) {
 			return Drop.shards(0.10, 1, 1);
 		}
 
-		// --- Common
+		// --- Endermite: paid flat for RARITY, not difficulty. Most players
+		// never see one (it only spawns from ender pearl misthrows), so a
+		// 5% chance of 1 shard meant it effectively never paid at all.
+		if (type == EntityTypes.ENDERMITE) {
+			return Drop.flat(5);
+		}
+
+		// --- Common. No armor, ever.
 		if (type == EntityTypes.ZOMBIE || type == EntityTypes.ZOMBIE_VILLAGER || type == EntityTypes.SKELETON
 				|| type == EntityTypes.CREEPER || type == EntityTypes.SPIDER
-				|| type == EntityTypes.SILVERFISH || type == EntityTypes.ENDERMITE) {
+				|| type == EntityTypes.SILVERFISH) {
 			return Drop.shards(0.05, 1, 1);
 		}
 
 		// Everything else — passive animals, villagers, and CRUCIALLY
 		// Iron Golem and Snow Golem (safeguard 2) — pays nothing.
 		return null;
+	}
+
+	// Rare/structure mobs get HP-derived armor odds; everything else uses
+	// whatever the table row set explicitly.
+	private static boolean usesHealthDerivedArmor(final EntityType<?> type) {
+		return type == EntityTypes.ELDER_GUARDIAN || type == EntityTypes.RAVAGER
+				|| type == EntityTypes.EVOKER || type == EntityTypes.PIGLIN_BRUTE
+				|| type == EntityTypes.BREEZE || type == EntityTypes.SHULKER
+				|| type == EntityTypes.GUARDIAN || type == EntityTypes.VINDICATOR
+				|| type == EntityTypes.PILLAGER || type == EntityTypes.ILLUSIONER;
 	}
 
 	public static void register() {
@@ -163,18 +239,40 @@ public final class MobDrops {
 			awardShards(level, entity, killer, drop);
 			rollWeapon(level, entity, drop.weaponChance(), drop.weaponPool());
 			rollWeapon(level, entity, drop.secondWeaponChance(), drop.secondWeaponPool());
+			awardArmor(level, entity, drop);
 		});
+	}
+
+	private static void awardArmor(final ServerLevel level, final LivingEntity victim, final Drop drop) {
+		double chance;
+		ArmorSet set;
+
+		if (usesHealthDerivedArmor(victim.getType())) {
+			chance = armorChanceFromHealth(victim);
+			set = armorSetFromHealth(victim);
+		} else {
+			chance = drop.armorChance();
+			set = drop.armorSet();
+		}
+
+		if (chance <= 0.0 || set == null) {
+			return;
+		}
+		if (ThreadLocalRandom.current().nextDouble() >= chance) {
+			return;
+		}
+		spawnAt(level, victim, new ItemStack(set.randomPiece()));
 	}
 
 	private static void awardShards(final ServerLevel level, final LivingEntity victim,
 			final ServerPlayer killer, final Drop drop) {
 		int count;
 		if (drop.shardChance() < 0.0) {
-			// Guaranteed payout (bosses, rare mobs). Luck still doubles it,
-			// but there is no chance roll to boost, so Fortune does nothing
-			// here by design — a potion should not multiply a boss payout.
+			// Guaranteed payout. Luck still doubles it, but there is no
+			// chance roll to boost, so Fortune does nothing here by design —
+			// a potion should not multiply a boss payout.
 			count = drop.shardMin();
-			if (killer.hasEffect(com.pisomarket.economy.harvest.PisoEffects.HARVEST_LUCK)) {
+			if (killer.hasEffect(PisoEffects.HARVEST_LUCK)) {
 				count *= 2;
 			}
 		} else {
