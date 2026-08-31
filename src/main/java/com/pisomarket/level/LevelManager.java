@@ -41,9 +41,15 @@ public final class LevelManager {
 	// Every 5th level grants health; all other levels alternate between
 	// attack and toughness.
 	private static final int HEALTH_EVERY = 5;
-	private static final double HEALTH_PER_GRANT = 2.0;   // 1 heart
+	// Doubled from the first pass so levelling actually feels like
+	// progression: +40 HP and +8 toughness at level 50, not +20 and +4.
+	private static final double HEALTH_PER_GRANT = 4.0;   // 2 hearts
+	private static final double TOUGHNESS_PER_GRANT = 0.4;
+	// Attack deliberately NOT doubled. The custom weapons already deal
+	// 23-44, and stacking a large attack stat on a 44-damage Divine Reaper
+	// re-creates the one-shot problem the whole combat rebalance exists to
+	// avoid. Survivability scales; lethality mostly does not.
 	private static final double ATTACK_PER_GRANT = 0.15;
-	private static final double TOUGHNESS_PER_GRANT = 0.2;
 
 	private static final Identifier HEALTH_ID = Identifier.fromNamespaceAndPath(PisoMarket.MOD_ID, "level_health");
 	private static final Identifier ATTACK_ID = Identifier.fromNamespaceAndPath(PisoMarket.MOD_ID, "level_attack");

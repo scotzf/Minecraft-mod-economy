@@ -974,6 +974,27 @@ instantly.
 - Exact rent rates, price multiplier, deed sizes/prices — tune after the
   systems run
 - Daily drop cap — deferred (see "Economy: one faucet"), not abandoned
+- **The mid-economy gap — DECIDED 2026-08-31: leave it. Bosses ARE the
+  endgame.** Nothing meaningful exists between ~80 Shards (farmable) and
+  500,000 (boss-only), and that is now accepted rather than a bug to fix.
+  Farming and common-mob grinding fund the cheap tier (diamond tools
+  10-80, potions 30-40); everything above that is boss income. The
+  consequence, stated plainly so nobody "fixes" it later: the farming
+  economy this project started as is now the early/tutorial tier, and the
+  Waypoint at 5,000 sits in a dead zone — out of reach by farming,
+  trivial after one boss. That is a known, chosen shape.
+
+- **Level system — DECIDED 2026-08-31: bigger stat gains.** Max level 50,
+  XP weighted farming 1 / mob 3 / PvP 9. Per-grant values DOUBLED from the
+  first pass: +4 HP every 5th level and +0.4 toughness, giving **+40 HP
+  and +8 toughness at level 50** (60 HP / 30 hearts total). Attack was
+  deliberately NOT doubled and stays at +0.15 (+3 at max) — the custom
+  weapons already deal 23-44, and a large attack stat on a 44-damage
+  Divine Reaper re-creates the one-shot problem the combat rebalance
+  exists to avoid. Survivability scales; lethality mostly does not.
+  Net effect at max level, Bulwark + Protection V: a 44-damage weapon
+  needs ~19 hits, a 30-damage weapon ~32.
+
 - **Weapon shop prices — DECIDED 2026-08-31, but the numbers do not work.**
   Only the Tier 4 (weakest) group is sold: Abominable Blade 200,000, Frost
   Axe 150,000, Molten Sword 100,000. Everything stronger is mob-drop-only.
