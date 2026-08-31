@@ -627,12 +627,17 @@ the fiddly part.
 
 ## Waypoints
 
-Fast travel between spread-out farms, as a **physical two-block structure**
-rather than a command-only convenience.
+**BUILT 2026-08-31** (`WaypointContent`, `WaypointState`, `WarpCommand`).
 
-- **Two blocks tall, placed from a single item** — lower and upper half, built
-  like a vanilla door. Breaking either half breaks both and returns the one
-  item.
+Fast travel between spread-out farms, as a physical placed block rather
+than a command-only convenience.
+
+- **A SINGLE block — confirmed 2026-08-31**, reversing the two-block
+  design below. The original sketch was a door-style two-block structure
+  (lower + upper half, breaking either breaks both); that needs paired
+  placement, paired breaking and a half-tracking blockstate, all of which
+  is real complexity buying nothing mechanically. Built as one block and
+  the user confirmed it. Do not "restore" the two-block version.
 - **Interacting binds it**, exactly the way a bed sets spawn. The last
   waypoint a player interacted with is their active destination; binding to a
   new one silently replaces the old.
@@ -969,7 +974,13 @@ instantly.
 - Exact rent rates, price multiplier, deed sizes/prices — tune after the
   systems run
 - Daily drop cap — deferred (see "Economy: one faucet"), not abandoned
-- **Waypoint price** — not set (acquisition is decided: BlackMarket)
+- **NEXT SESSION'S TOPIC: prices for all 12 custom weapons.** The values
+  currently live in `ShopCatalog` Tier 4 (800 / 1500 / 3000 / 5000, mirroring
+  the rarity tiers) are a FIRST PASS that was never agreed — they exist only
+  so the tier is buyable at all. Re-decide them deliberately.
+- **Waypoint price** — not set, and the Waypoint block is currently NOT in
+  the shop catalog at all (only obtainable via `/give` and the testkit).
+  Decide alongside the weapon prices above.
 - Whether listings ever expire and return items to the seller
 - Whether rent is strictly auto-renew, or a manual `/claim pay` also exists
 - Whether `/pay` should exist at all, given players can hand over coins directly
