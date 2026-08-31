@@ -304,7 +304,9 @@ public final class MobDrops {
 		}
 
 		if (count > 0) {
-			spawnAt(level, victim, new ItemStack(PisoCurrency.SUNSTONE_SHARD, count));
+			// Straight to the vault, like XP. Weapons and armor below still
+			// drop as real items — those are gear, not currency.
+			com.pisomarket.economy.harvest.HarvestFaucet.credit(killer, count);
 		}
 	}
 

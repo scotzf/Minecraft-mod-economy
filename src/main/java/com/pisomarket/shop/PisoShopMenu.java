@@ -187,7 +187,8 @@ public class PisoShopMenu extends AbstractContainerMenu {
 	private void showMain() {
 		view = View.MAIN;
 		clearContent();
-		content.setItem(MAIN_VAULT, namedBook("Vault"));
+		// Vault tab retired: Shards are a balance with no item form, so
+		// there is nothing to deposit or withdraw. /balance shows it.
 		content.setItem(MAIN_BUY, namedBook("Buy"));
 		content.setItem(MAIN_SELL, namedBook("Sell"));
 		content.setItem(MAIN_BLACKMARKET, namedBook("BlackMarket"));
@@ -413,9 +414,9 @@ public class PisoShopMenu extends AbstractContainerMenu {
 	}
 
 	private void clickedMain(final int slotId, final ServerPlayer player) {
-		if (slotId == MAIN_VAULT) {
-			showVault();
-		} else if (slotId == MAIN_BUY) {
+		// No Vault branch: Shards are a balance with no item form, so there
+		// is nothing to deposit or withdraw. /balance reports it.
+		if (slotId == MAIN_BUY) {
 			showMarket(0);
 		} else if (slotId == MAIN_SELL) {
 			showSell();

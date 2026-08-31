@@ -12,7 +12,8 @@ import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.NetherWartBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
-import com.pisomarket.economy.PisoCurrency;
+import com.pisomarket.economy.PisoVault;
+import com.pisomarket.economy.VaultSync;
 
 // The farming faucet — one of two places new money enters the world (mob
 // drops are the other; see MobDrops).
@@ -23,11 +24,11 @@ import com.pisomarket.economy.PisoCurrency;
 // villager farms mint nothing no matter how large they are. This is the
 // single reason it is safe to have no daily cap.
 //
-// PAYS A PHYSICAL DROP, not a vault deposit. The currency is an item, so
-// earning it should put an item on the ground. The old behaviour deposited
-// straight into the vault, which made money invisible and contradicted the
-// whole point of item currency. Losing a payout to lava is an accepted
-// passive sink.
+// PAYS STRAIGHT INTO THE VAULT, the way vanilla XP does. Shards are a
+// balance, not an item you carry: there is nothing to pick up, nothing to
+// lose to lava, and nothing to leave behind by walking away from a farm.
+// The sink that replaces "lost to lava" is the death penalty — see
+// DeathPenalty.
 public final class HarvestFaucet {
 	// Per-crop drop chance. Nether wart is highest because reaching the
 	// Nether at all is its own barrier, already priced in.
@@ -106,13 +107,15 @@ public final class HarvestFaucet {
 				return;
 			}
 
-			dropShards(level, pos, payout);
+			credit(serverPlayer, payout);
 		});
 	}
 
-	// Pops the reward on the ground the same way a broken crop pops its own
-	// seeds, so it behaves like any other harvest yield.
-	public static void dropShards(final Level level, final BlockPos pos, final int count) {
-		Block.popResource(level, pos, new ItemStack(PisoCurrency.SUNSTONE_SHARD, count));
+	// Credits the vault and pushes the new balance to the HUD, so the
+	// number visibly ticks up the moment a crop pays out.
+	public static void credit(final ServerPlayer player, final int amount) {
+		player.level().getServer().getDataStorage().computeIfAbsent(PisoVault.TYPE)
+				.deposit(player.getUUID(), amount);
+		VaultSync.sync(player);
 	}
 }

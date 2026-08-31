@@ -86,8 +86,10 @@ public final class LeaderboardTracker {
 	// storage, so money kept there is still plainly theirs. Ordinary chests
 	// are NOT counted and cannot be — see PisoLeaderboard.
 	private static long countCarried(final ServerPlayer player) {
-		return (long) player.getInventory().countItem(PisoCurrency.SUNSTONE_SHARD)
-				+ player.getEnderChestInventory().countItem(PisoCurrency.SUNSTONE_SHARD);
+		// Shards live only in the vault now — there is nothing carried to
+		// count, so the "chests aren't included" caveat no longer applies
+		// and the board is exact rather than a lower bound.
+		return 0L;
 	}
 
 	private static void publish(final MinecraftServer server, final PisoLeaderboard board, final int today) {

@@ -31,7 +31,7 @@ public class PisoMarket implements ModInitializer {
 		com.pisomarket.economy.PisoCurrency.register();
 		PisoCommands.register();
 		EcoCommands.register();
-		com.pisomarket.economy.VaultCommands.register();
+		com.pisomarket.economy.DeathPenalty.register();
 		VaultSync.register();
 		com.pisomarket.economy.LeaderboardCommands.register();
 		com.pisomarket.economy.LeaderboardTracker.register();

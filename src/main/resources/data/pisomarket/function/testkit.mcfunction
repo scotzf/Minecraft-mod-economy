@@ -37,8 +37,6 @@ give @s pisomarket:bulwark_helmet[enchantments={"minecraft:protection":5,"minecr
 give @s pisomarket:bulwark_chestplate[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
 give @s pisomarket:bulwark_leggings[enchantments={"minecraft:protection":5,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
 give @s pisomarket:bulwark_boots[enchantments={"minecraft:protection":5,"minecraft:feather_falling":4,"minecraft:thorns":3,"minecraft:unbreaking":3,"minecraft:mending":1}]
-# Currency — Sunstone Shards, for /deposit and shop testing
-give @s pisomarket:sunstone_shard 64
 # Waypoint block, for /warp testing
 give @s pisomarket:waypoint 2
 # Harvest boosters, normally only reachable via the shop
