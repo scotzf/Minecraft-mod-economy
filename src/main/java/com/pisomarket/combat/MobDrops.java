@@ -122,16 +122,19 @@ public final class MobDrops {
 	}
 
 	private static Drop tableFor(final EntityType<?> type) {
-		// --- Bosses. Tier 1 mobs drop armor at 100% alongside their weapon.
+		// --- Bosses. Tier 1 mobs drop armor at 100% alongside their weapon,
+		// and pay across a 500k-1m band scaled by how hard the fight is.
+		// These are deliberately the only income at this magnitude — see the
+		// economy note in CLAUDE.md about what that does to farming.
 		if (type == EntityTypes.WARDEN) {
-			return Drop.flat(10000).withWeapon(1.0, TIER_1).withArmor(1.0, ArmorSet.BULWARK);
+			return Drop.flat(1_000_000).withWeapon(1.0, TIER_1).withArmor(1.0, ArmorSet.BULWARK);
 		}
 		if (type == EntityTypes.ENDER_DRAGON) {
-			return Drop.flat(5000).withWeapon(0.50, TIER_2).withRareWeapon(0.05, TIER_1)
+			return Drop.flat(750_000).withWeapon(0.50, TIER_2).withRareWeapon(0.05, TIER_1)
 					.withArmor(1.0, ArmorSet.BULWARK);
 		}
 		if (type == EntityTypes.WITHER) {
-			return Drop.flat(3000).withWeapon(0.40, TIER_2).withRareWeapon(0.03, TIER_1)
+			return Drop.flat(500_000).withWeapon(0.40, TIER_2).withRareWeapon(0.03, TIER_1)
 					.withArmor(1.0, ArmorSet.AEGIS);
 		}
 
