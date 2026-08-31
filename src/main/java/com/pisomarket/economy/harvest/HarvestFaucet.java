@@ -45,10 +45,12 @@ public final class HarvestFaucet {
 	// Returns the base drop chance for a fully grown crop, or 0 if this
 	// block is not a currency-bearing crop (or is not yet mature).
 	//
-	// Melon/pumpkin/sugar cane/cocoa/berries are deliberately absent: they
-	// are the renewable crops that regrow without replanting, so an
-	// unbounded automated farm would dominate the faucet. Adding them needs
-	// a lower rate or a cap decided first.
+	// Melon, pumpkin, sugar cane, cocoa, sweet berries and glow berries are
+	// DECIDED-OUT (2026-08-31), not merely unimplemented. They are the
+	// renewable crops: harvesting them does not consume the plant, so one
+	// large farm produces forever at no ongoing cost. Only replant-required
+	// crops pay, which keeps the faucet tied to real effort per harvest.
+	// Do not "complete the set" by adding them.
 	public static double baseChanceFor(final BlockState state) {
 		if (state.is(Blocks.NETHER_WART)) {
 			// NetherWartBlock is NOT a CropBlock and has its own 0-3 age
